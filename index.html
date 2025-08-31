@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Social Media Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* * To use your own local fonts:
+         * 1. Create a 'fonts' folder in the same directory as this index.html file.
+         * 2. Place your font files (e.g., my-custom-font.woff2) inside the 'fonts' folder.
+         * 3. Uncomment and modify the @font-face rule below.
+         * 4. Change the font-family in the 'body' style rule to 'My Custom Font'.
+        */
+        /*
+        @font-face {
+            font-family: 'My Custom Font';
+            src: url('./fonts/my-custom-font.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        */
+        body {
+            /* font-family: 'My Custom Font', sans-serif; */
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Style for the TikTok embed in dark mode */
+        .dark .tiktok-embed {
+            background-color: #1f2937 !important; /* Dark gray background */
+            border: 1px solid #374151 !important; /* Lighter gray border */
+            border-radius: 8px; /* Rounded corners */
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggle = document.getElementById('theme-toggle');
+            const htmlElement = document.documentElement;
+
+            // Central function to set the theme, save the choice, and update the toggle
+            function setTheme(isDark) {
+                // Set the theme on the main <html> element
+                if (isDark) {
+                    htmlElement.classList.add('dark');
+                    localStorage.setItem('theme', 'dark'); // Save preference
+                } else {
+                    htmlElement.classList.remove('dark');
+                    localStorage.setItem('theme', 'light'); // Save preference
+                }
+                // Update the checkbox to match the current theme
+                themeToggle.checked = isDark;
+            }
+
+            // Listen for clicks on the toggle switch
+            themeToggle.addEventListener('change', () => {
+                setTheme(themeToggle.checked);
+            });
+
+            // Listen for changes in the operating system's theme preference
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                // Only apply the system theme if the user hasn't manually set one
+                if (!('theme' in localStorage)) {
+                    setTheme(e.matches);
+                }
+            });
+
+            // --- Set Initial Theme on Page Load ---
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                // If a theme is saved in localStorage, use it
+                setTheme(savedTheme === 'dark');
+            } else {
+                // Otherwise, use the system's preferred theme
+                setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
+            }
+        });
+    </script>
+</head>
+<body class="bg-slate-100 dark:bg-gray-900 text-slate-800 dark:text-slate-200 transition-colors duration-300">
+
+    <div class="container mx-auto px-4 py-8 md:py-16 min-h-screen flex flex-col items-center">
+
+        <!-- Header and Theme Toggle -->
+        <header class="w-full max-w-4xl flex justify-between items-center mb-12">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
+                My Corner of the Internet
+            </h1>
+            <!-- Theme toggle switch -->
+            <div class="flex items-center">
+                <span class="mr-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden dark:inline-block"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block dark:hidden"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+                </span>
+                <label for="theme-toggle" class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="theme-toggle" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                </label>
+            </div>
+        </header>
+
+        <main class="w-full max-w-4xl flex-grow">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
+                
+                <!-- YouTube Section -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center">
+                    <img src="https://yt3.ggpht.com/ytc/AIdro_k4m1zYy9P0Y6Z9E9w_Z5-Y5eF8V8k-j8g-4Z6a=s176-c-k-c0x00ffffff-no-rj-mo" 
+                         alt="YouTube Profile Picture" 
+                         class="w-32 h-32 rounded-full border-4 border-slate-200 dark:border-gray-700 mb-4 shadow-md"
+                         onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/334155?text=Cenk57';">
+                    <h2 class="text-2xl font-bold mb-2 text-gray-900 dark:text-white">YouTube</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">Check out my latest videos!</p>
+                    <a href="https://www.youtube.com/@Cenk57" target="_blank" rel="noopener noreferrer" 
+                       class="inline-block bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
+                        Visit Channel
+                    </a>
+                </div>
+
+                <!-- TikTok Section -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center">
+                    <img src="https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/7340645672323399686~c5_720x720.jpeg" 
+                         alt="TikTok Profile Picture" 
+                         class="w-32 h-32 rounded-full border-4 border-slate-200 dark:border-gray-700 mb-4 shadow-md"
+                         onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/334155?text=basc';">
+                    <h2 class="text-2xl font-bold mb-2 text-gray-900 dark:text-white">TikTok</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">Follow me for more content.</p>
+                     <a href="https://www.tiktok.com/@basc_official?lang=en-GB" target="_blank" rel="noopener noreferrer" 
+                       class="inline-block bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
+                        View Profile
+                    </a>
+                </div>
+
+                <!-- TikTok Embed Section -->
+                <div class="lg:col-span-2 mt-8">
+                     <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@basc_official" data-unique-id="basc_official" data-embed-type="creator" style="max-width: 780px; min-width: 288px; margin: 0 auto;" > <section> <a target="_blank" href="https://www.tiktok.com/@basc_official?refer=creator_embed">@basc_official</a> </section> </blockquote> <script async src="https://www.tiktok.com/embed.js"></script>
+                </div>
+
+            </div>
+        </main>
+
+        <footer class="w-full max-w-4xl text-center mt-12 py-6 border-t border-slate-200 dark:border-gray-700">
+            <p class="text-gray-500 dark:text-gray-400">&copy; 2024. All Rights Reserved.</p>
+        </footer>
+    </div>
+
+</body>
+</html>
+
+
