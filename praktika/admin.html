@@ -6,60 +6,292 @@ layout: null
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Termine Bearbeiten</title>
+  <title>Admin - Praktikumskalender Bearbeiten</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #c9d1d9; max-width: 700px; margin: 40px auto; padding: 20px; }
-    input, textarea, button { width: 100%; margin-bottom: 15px; padding: 10px; border-radius: 6px; border: 1px solid #30363d; background: #161b22; color: #fff; box-sizing: border-box; }
-    button { background: #238636; font-size: 1rem; font-weight: bold; cursor: pointer; border: none; padding: 12px; }
-    button:hover { background: #2ea44f; }
-    textarea { font-family: monospace; height: 320px; font-size: 0.9rem; line-height: 1.4; }
-    .status { padding: 12px; border-radius: 6px; display: none; margin-bottom: 15px; font-weight: bold; }
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --accent: #238636;
+      --status-gruen: #238636;
+      --status-rot: #da3633;
+      --status-gelb: #9e6a03;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 20px 50px 20px;
+    }
+
+    h1 { margin-bottom: 5px; }
+    p.subtitle { color: #8b949e; margin-bottom: 25px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .auth-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input, select {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+
+    input[type="password"] { flex-grow: 1; }
+
+    .table-container {
+      overflow-x: auto;
+      margin-top: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #21262d;
+      color: #8b949e;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+    }
+
+    .status-select {
+      font-weight: bold;
+      border-radius: 20px;
+      padding: 6px 12px;
+      cursor: pointer;
+      border: none;
+    }
+
+    /* Farbige Badges für Excel-Look */
+    .status-select[data-status="frei"] { background: rgba(46,164,79,0.25); color: #3fb950; border: 1px solid var(--status-gruen); }
+    .status-select[data-status="belegt"] { background: rgba(248,81,73,0.25); color: #f85149; border: 1px solid var(--status-rot); }
+    .status-select[data-status="vorgemerkt"] { background: rgba(210,153,34,0.25); color: #d29922; border: 1px solid var(--status-gelb); }
+
+    .betrieb-input {
+      width: 90%;
+      background: #161b22;
+      border: 1px solid #30363d;
+    }
+
+    .btn-save {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 14px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 20px;
+      transition: background 0.2s;
+    }
+
+    .btn-save:hover { background: #2ea44f; }
+
+    .status-msg {
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
     .success { background: rgba(46,164,79,0.2); color: #3fb950; border: 1px solid rgba(46,164,79,0.4); }
     .error { background: rgba(248,81,73,0.2); color: #f85149; border: 1px solid rgba(248,81,73,0.4); }
   </style>
 </head>
 <body>
 
-  <h1>Admin Interface</h1>
-  
-  <div id="statusBox" class="status"></div>
+  <h1>Praktikums-Verwaltung</h1>
+  <p class="subtitle">Verwalte deine Praktikumstermine visuell wie in Excel.</p>
 
-  <label>Passwort:</label>
-  <input type="password" id="password" placeholder="Passwort eingeben...">
+  <div id="statusBox" class="status-msg"></div>
 
-  <label>YAML Daten (_data/meinedaten.yml):</label>
-  <textarea id="yamlContent" placeholder="Lade Daten..."></textarea>
+  <div class="card">
+    <div class="auth-group">
+      <label for="password"><strong>Admin-Passwort:</strong></label>
+      <input type="password" id="password" placeholder="Passwort eingeben...">
+    </div>
+  </div>
 
-  <button onclick="saveData()">Änderungen Speichern</button>
+  <div class="card">
+    <h3>Terminübersicht</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>SW / KW</th>
+            <th>Zeitraum</th>
+            <th>Status</th>
+            <th>Betrieb / Einrichtung</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="4" style="text-align:center;">Lade Daten...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <button class="btn-save" onclick="saveData()">Änderungen Speichern</button>
+  </div>
 
   <script>
     const WORKER_URL = "https://dark-scene-3aef.dssd00598.workers.dev";
     let currentSha = "";
+    let rawLegende = [];
+    let termineData = [];
+
+    // Simple YAML Parser für dieses spezifische Schema
+    function parseYAML(text) {
+      const lines = text.split('\n');
+      let inTermine = false;
+      let inLegende = false;
+      let termine = [];
+      let legende = [];
+      let currentItem = null;
+
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('legende:')) { inLegende = true; inTermine = false; return; }
+        if (trimmed.startsWith('termine:')) { inTermine = true; inLegende = false; return; }
+
+        if (trimmed.startsWith('- ')) {
+          if (currentItem) {
+            if (inLegende) legende.push(currentItem);
+            if (inTermine) termine.push(currentItem);
+          }
+          currentItem = {};
+        }
+
+        if (currentItem && trimmed.includes(':')) {
+          const parts = trimmed.replace(/^- /, '').split(':');
+          const key = parts[0].trim();
+          let val = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+          currentItem[key] = val;
+        }
+      });
+
+      if (currentItem) {
+        if (inLegende) legende.push(currentItem);
+        if (inTermine) termine.push(currentItem);
+      }
+
+      return { legende, termine };
+    }
+
+    // Wandelt Tabellendaten zurück in sauber eingerücktes YAML um
+    function generateYAML(legende, termine) {
+      let yaml = "legende:\n";
+      legende.forEach(item => {
+        yaml += `  - farbe: "${item.farbe}"\n`;
+        yaml += `    label: "${item.label}"\n`;
+      });
+
+      yaml += "\ntermine:\n";
+      termine.forEach(item => {
+        yaml += `  - sw: "${item.sw || ''}"\n`;
+        yaml += `    kw: "${item.kw || ''}"\n`;
+        yaml += `    von: "${item.von || ''}"\n`;
+        yaml += `    bis: "${item.bis || ''}"\n`;
+        yaml += `    betrieb: "${item.betrieb || ''}"\n`;
+        yaml += `    status: "${item.status || 'frei'}"\n`;
+      });
+
+      return yaml;
+    }
 
     async function loadData() {
       try {
         const res = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml");
         const data = await res.json();
         currentSha = data.sha;
-        document.getElementById("yamlContent").value = decodeURIComponent(escape(atob(data.content)));
+        const yamlText = decodeURIComponent(escape(atob(data.content)));
+        
+        const parsed = parseYAML(yamlText);
+        rawLegende = parsed.legende;
+        termineData = parsed.termine;
+
+        renderTable();
       } catch (err) {
-        alert("Fehler beim Laden der YAML-Daten: " + err.message);
+        alert("Fehler beim Laden der Daten: " + err.message);
       }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+
+      termineData.forEach((item, index) => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td><strong>${item.sw || ''}</strong> <br><small style="color:#8b949e">${item.kw || ''}</small></td>
+          <td>${item.von || ''} – ${item.bis || ''}</td>
+          <td>
+            <select class="status-select" data-status="${item.status || 'frei'}" onchange="updateStatusStyle(this, ${index})">
+              <option value="frei" ${item.status === 'frei' ? 'selected' : ''}>Frei / Verfügbar</option>
+              <option value="vorgemerkt" ${item.status === 'vorgemerkt' ? 'selected' : ''}>Vorgemerkt</option>
+              <option value="belegt" ${item.status === 'belegt' ? 'selected' : ''}>Belegt</option>
+            </select>
+          </td>
+          <td>
+            <input type="text" class="betrieb-input" value="${item.betrieb || ''}" onchange="updateBetrieb(this.value, ${index})" placeholder="Betrieb eintragen...">
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateStatusStyle(selectEl, index) {
+      const val = selectEl.value;
+      selectEl.setAttribute("data-status", val);
+      termineData[index].status = val;
+    }
+
+    function updateBetrieb(val, index) {
+      termineData[index].betrieb = val;
     }
 
     async function saveData() {
       const password = document.getElementById("password").value;
-      const updatedYamlContent = document.getElementById("yamlContent").value;
       const statusBox = document.getElementById("statusBox");
 
       if (!password) {
-        alert("Bitte gib dein Passwort ein!");
+        alert("Bitte gib dein Admin-Passwort ein!");
         return;
       }
 
       statusBox.style.display = "block";
-      statusBox.className = "status";
+      statusBox.className = "status-msg";
       statusBox.innerText = "Speichere auf GitHub...";
+
+      const updatedYamlContent = generateYAML(rawLegende, termineData);
 
       try {
         const response = await fetch(WORKER_URL, {
@@ -75,15 +307,15 @@ layout: null
         const result = await response.json();
 
         if (response.ok) {
-          statusBox.className = "status success";
-          statusBox.innerText = "Erfolgreich gespeichert! GitHub aktualisiert die Seite...";
+          statusBox.className = "status-msg success";
+          statusBox.innerText = "Erfolgreich gespeichert! GitHub baut die Seite neu auf...";
           loadData();
         } else {
-          statusBox.className = "status error";
+          statusBox.className = "status-msg error";
           statusBox.innerText = "Fehler: " + (result.error || "Unbekannter Fehler");
         }
       } catch (err) {
-        statusBox.className = "status error";
+        statusBox.className = "status-msg error";
         statusBox.innerText = "Verbindungsfehler: " + err.message;
       }
     }
