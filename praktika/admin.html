@@ -222,22 +222,31 @@
     }
 
     async function loadData() {
-      try {
-        const res = await fetch(`${REPO_URL}?t=${Date.now()}`);
-        if (!res.ok) throw new Error("Netzwerkfehler beim Laden der Datei.");
-
-        const data = await res.json();
-        const yamlText = decodeBase64UTF8(data.content);
-        
-        const parsed = parseYAML(yamlText);
-        rawLegende = parsed.legende;
-        termineData = parsed.termine;
-
-        renderTable();
-      } catch (err) {
-        alert("Fehler beim Laden der Daten: " + err.message);
-      }
+  const tbody = document.getElementById('admin-table-body');
+  try {
+    // Direktes Laden der Raw-Datei von GitHub ohne zusätzliche Custom-Header (vermeidet CORS-Sperren)
+    const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?t=" + Date.now());
+    
+    if (!res.ok) {
+      throw new Error(`HTTP-Fehler ${res.status}: Datei konnte nicht gefunden werden.`);
     }
+
+    const yamlText = await res.text();
+    const parsed = parseYAML(yamlText);
+    
+    rawLegende = parsed.legende || [];
+    termineData = parsed.termine || [];
+
+    if (termineData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;">Keine Termine vorhanden.</td></tr>`;
+    } else {
+      renderTable();
+    }
+  } catch (err) {
+    console.error("Ladefehler:", err);
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 2rem;">Fehler beim Laden: ${err.message}</td></tr>`;
+  }
+}
 
     function renderTable() {
       const tbody = document.getElementById('admin-table-body');
