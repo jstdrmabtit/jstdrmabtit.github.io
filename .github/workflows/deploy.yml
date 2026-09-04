@@ -2,11 +2,23 @@ name: Rebuild Jekyll on Data Change
 
 on:
   push:
-    paths:
-      - '_data/**'
+    branches: ["main"]
+
+# Diese Berechtigungen müssen explizit gesetzt werden:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  github-pages:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
