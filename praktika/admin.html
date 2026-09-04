@@ -27,7 +27,7 @@
     }
 
     .container {
-      max-width: 1000px;
+      max-width: 1100px;
       width: 100%;
     }
 
@@ -61,12 +61,22 @@
       border-radius: 6px;
       color: var(--text);
       box-sizing: border-box;
+      font-size: 0.9rem;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #58a6ff;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin-bottom: 1rem;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 1rem;
     }
 
     th, td {
@@ -79,6 +89,7 @@
       background-color: #21262d;
       color: var(--heading);
       font-size: 0.85rem;
+      font-weight: 600;
     }
 
     .btn {
@@ -96,7 +107,7 @@
 
     .btn-danger {
       background-color: var(--danger);
-      padding: 0.3rem 0.6rem;
+      padding: 0.4rem 0.8rem;
       font-size: 0.8rem;
       width: auto;
     }
@@ -125,23 +136,25 @@
 
     <div class="card">
       <h2>Terminübersicht</h2>
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 10%;">SW</th>
-            <th style="width: 10%;">KW</th>
-            <th style="width: 30%;">VON – BIS</th>
-            <th style="width: 20%;">STATUS</th>
-            <th style="width: 20%;">BETRIEB / EINRICHTUNG</th>
-            <th style="width: 10%;">AKTION</th>
-          </tr>
-        </thead>
-        <tbody id="admin-table-body">
-          <tr>
-            <td colspan="6" style="text-align: center;">Lade Daten...</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 10%;">SW</th>
+              <th style="width: 10%;">KW</th>
+              <th style="width: 30%;">VON – BIS</th>
+              <th style="width: 20%;">STATUS</th>
+              <th style="width: 20%;">BETRIEB / EINRICHTUNG</th>
+              <th style="width: 10%;">AKTION</th>
+            </tr>
+          </thead>
+          <tbody id="admin-table-body">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem;">Lade Daten...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <button class="btn btn-add" onclick="addRow()">+ Neuen Termin hinzufügen</button>
       <button class="btn" onclick="saveData()">Änderungen Speichern</button>
@@ -231,7 +244,7 @@
           <td><input type="text" value="${t.sw}" onchange="updateData(${index}, 'sw', this.value)"></td>
           <td><input type="text" value="${t.kw}" onchange="updateData(${index}, 'kw', this.value)"></td>
           <td>
-            <div style="display: flex; gap: 0.2rem; align-items: center;">
+            <div style="display: flex; gap: 0.3rem; align-items: center;">
               <input type="text" value="${t.von}" onchange="updateData(${index}, 'von', this.value)">
               <span>-</span>
               <input type="text" value="${t.bis}" onchange="updateData(${index}, 'bis', this.value)">
