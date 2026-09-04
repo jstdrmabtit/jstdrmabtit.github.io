@@ -174,23 +174,25 @@
     return { legende, termine };
   }
 
-  async function loadLiveData() {
-    try {
-      // GitHub API mit Timestamp abfragen, um Cache zu umgehen
-      const res = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml?timestamp=" + new Date().getTime());
-      const data = await res.json();
+ async function loadLiveData() {
+  try {
+    const res = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml?timestamp=" + new Date().getTime());
+    const data = await res.json();
+    
+    if (data.sha !== lastSha) {
+      lastSha = data.sha;
       
-      // Prüfen, ob sich die Datei seit dem letzten Prüfen überhaupt verändert hat
-      if (data.sha !== lastSha) {
-        lastSha = data.sha; // Neuen Status merken
-        const yamlText = decodeURIComponent(escape(atob(data.content)));
-        const parsed = parseYAML(yamlText);
-        renderPage(parsed.legende, parsed.termine);
-      }
-    } catch (err) {
-      console.error("Fehler beim automatischen Aktualisieren:", err);
+      const cleanedBase64 = data.content.replace(/\s/g, '');
+      const bytes = Uint8Array.from(atob(cleanedBase64), c => c.charCodeAt(0));
+      const yamlText = new TextDecoder('utf-8').decode(bytes);
+
+      const parsed = parseYAML(yamlText);
+      renderPage(parsed.legende, parsed.termine);
     }
+  } catch (err) {
+    console.error("Fehler beim automatischen Aktualisieren:", err);
   }
+}
 
   function renderPage(legende, termine) {
     // Legende rendern
