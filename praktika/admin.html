@@ -216,9 +216,7 @@
 
     async function loadData() {
   try {
-    const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?t=" + new Date().getTime(), {
-      headers: { "Cache-Control": "no-cache" }
-    });
+    const res = await fetch("https://cdn.jsdelivr.net/gh/jstdrmabtit/jstdrmabtit.github.io@latest/_data/meinedaten.yml?t=" + new Date().getTime());
     if (!res.ok) throw new Error("Datei konnte nicht geladen werden.");
     
     const yamlText = await res.text();
