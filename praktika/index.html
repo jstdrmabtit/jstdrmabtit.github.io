@@ -217,7 +217,43 @@
       }
     }
 
-    loadFrontendData();
+    //here
+    
+    let fetchInterval = null;
+    let backgroundTimer = null;
+    const REFRESH_INTERVAL_MS = 10000;
+    const BACKGROUND_TIMEOUT_MS = 30000;
+
+    function startAutoRefresh() {
+      if (!fetchInterval) {
+        fetchInterval = setInterval(loadFrontendData, REFRESH_INTERVAL_MS);
+      }
+    }
+
+    function stopAutoRefresh() {
+      if (fetchInterval) {
+        clearInterval(fetchInterval);
+        fetchInterval = null;
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        backgroundTimer = setTimeout(() => {
+      stopAutoRefresh();
+        }, BACKGROUND_TIMEOUT_MS);
+      } else {
+        if (backgroundTimer) {
+          clearTimeout(backgroundTimer);
+          backgroundTimer = null;
+        }
+        loadFrontendData();
+        startAutoRefresh();
+      }
+    });
+
+loadFrontendData();
+startAutoRefresh();
   </script>
 </body>
 </html>
