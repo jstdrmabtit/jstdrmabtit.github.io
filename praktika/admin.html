@@ -292,36 +292,46 @@
     }
 
     async function saveData() {
-      const password = document.getElementById('pat').value.trim();
-      if (!password) {
-        alert("Bitte gib dein Admin-Passwort ein!");
-        return;
-      }
+  const password = document.getElementById('pat').value.trim();
+  if (!password) {
+    alert("Bitte gib dein Admin-Passwort ein!");
+    return;
+  }
 
-      const yamlContent = generateYAML();
+  const yamlContent = generateYAML();
 
-      try {
-        const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            password: password,
-            content: yamlContent
-          })
-        });
-
-        if (res.ok) {
-          alert("Erfolgreich gespeichert!");
-        } else {
-          const errText = await res.text();
-          alert("Fehler beim Speichern: " + errText);
-        }
-      } catch (err) {
-        alert("Netzwerkfehler: " + err.message);
-      }
+  try {
+    // 1. Aktuelle SHA direkt von GitHub laden (öffentlicher Lesezugriff)
+    const shaRes = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml");
+    if (!shaRes.ok) {
+      throw new Error("Konnte Datei-SHA nicht von GitHub abrufen.");
     }
+    const shaData = await shaRes.json();
+    const currentSha = shaData.sha;
+
+    // 2. Daten inklusive SHA an den Cloudflare Worker senden
+    const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        password: password,
+        content: yamlContent,
+        sha: currentSha
+      })
+    });
+
+    if (res.ok) {
+      alert("Erfolgreich gespeichert!");
+    } else {
+      const errText = await res.text();
+      alert("Fehler beim Speichern: " + errText);
+    }
+  } catch (err) {
+    alert("Fehler: " + err.message);
+  }
+}
 
     loadData();
   </script>
