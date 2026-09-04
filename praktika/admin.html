@@ -125,12 +125,12 @@
 
   <div class="container">
     <h1>Praktikums-Verwaltung</h1>
-    <p class="subtitle">Verwalte deine Schulwochen, Daten und den Belegungsstatus direkt über GitHub.</p>
+    <p class="subtitle">Verwalte deine Schulwochen, Daten und den Belegungsstatus über Cloudflare.</p>
 
     <div class="card">
       <div class="form-group">
         <label for="pat">Admin-Passwort:</label>
-        <input type="password" id="pat" placeholder="GitHub Personal Access Token eintragen...">
+        <input type="password" id="pat" placeholder="Admin-Passwort eingeben...">
       </div>
     </div>
 
@@ -163,205 +163,167 @@
 
   <script>
     let rawLegende = [];
-let termineData = [];
+    let termineData = [];
 
-function parseYAML(yamlString) {
-  const lines = yamlString.split('\n');
-  let legende = [];
-  let termine = [];
-  let currentSection = null;
-  let currentItem = null;
+    function parseYAML(yamlString) {
+      const lines = yamlString.split('\n');
+      let legende = [];
+      let termine = [];
+      let currentSection = null;
+      let currentItem = null;
 
-  for (let line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
+      for (let line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
 
-    if (trimmed === 'legende:') {
-      currentSection = 'legende';
-      continue;
-    } else if (trimmed === 'termine:') {
-      if (currentItem && currentSection === 'legende') legende.push(currentItem);
-      currentSection = 'termine';
-      currentItem = null;
-      continue;
-    }
+        if (trimmed === 'legende:') {
+          currentSection = 'legende';
+          continue;
+        } else if (trimmed === 'termine:') {
+          if (currentItem && currentSection === 'legende') legende.push(currentItem);
+          currentSection = 'termine';
+          currentItem = null;
+          continue;
+        }
 
-    if (trimmed.startsWith('- ')) {
+        if (trimmed.startsWith('- ')) {
+          if (currentItem) {
+            if (currentSection === 'legende') legende.push(currentItem);
+            if (currentSection === 'termine') termine.push(currentItem);
+          }
+          currentItem = {};
+          const firstProp = trimmed.substring(2).split(':');
+          if (firstProp.length >= 2) {
+            const key = firstProp[0].trim();
+            const val = firstProp.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+            currentItem[key] = val;
+          }
+        } else if (currentItem && trimmed.includes(':')) {
+          const parts = trimmed.split(':');
+          const key = parts[0].trim();
+          const val = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+          currentItem[key] = val;
+        }
+      }
+
       if (currentItem) {
         if (currentSection === 'legende') legende.push(currentItem);
         if (currentSection === 'termine') termine.push(currentItem);
       }
-      currentItem = {};
-      const firstProp = trimmed.substring(2).split(':');
-      if (firstProp.length >= 2) {
-        const key = firstProp[0].trim();
-        const val = firstProp.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
-        currentItem[key] = val;
+
+      return { legende, termine };
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch("https://cdn.jsdelivr.net/gh/jstdrmabtit/jstdrmabtit.github.io@main/_data/meinedaten.yml?timestamp=" + new Date().getTime());
+        if (!res.ok) throw new Error("Datei konnte nicht geladen werden.");
+        
+        const yamlText = await res.text();
+        const parsed = parseYAML(yamlText);
+        rawLegende = parsed.legende;
+        termineData = parsed.termine;
+
+        renderTable();
+      } catch (err) {
+        alert("Fehler beim Laden der Daten: " + err.message);
       }
-    } else if (currentItem && trimmed.includes(':')) {
-      const parts = trimmed.split(':');
-      const key = parts[0].trim();
-      const val = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
-      currentItem[key] = val;
     }
-  }
 
-  if (currentItem) {
-    if (currentSection === 'legende') legende.push(currentItem);
-    if (currentSection === 'termine') termine.push(currentItem);
-  }
-
-  return { legende, termine };
-}
-
-async function loadData() {
-  try {
-    const res = await fetch("https://cdn.jsdelivr.net/gh/jstdrmabtit/jstdrmabtit.github.io@main/_data/meinedaten.yml?timestamp=" + new Date().getTime());
-    if (!res.ok) throw new Error("Datei konnte nicht geladen werden.");
-    
-    const yamlText = await res.text();
-    const parsed = parseYAML(yamlText);
-    rawLegende = parsed.legende;
-    termineData = parsed.termine;
-
-    renderTable();
-  } catch (err) {
-    alert("Fehler beim Laden der Daten: " + err.message);
-  }
-}
-
-function renderTable() {
-  const tbody = document.getElementById('admin-table-body');
-  tbody.innerHTML = termineData.map((t, index) => `
-    <tr>
-      <td><input type="text" value="${t.sw}" onchange="updateData(${index}, 'sw', this.value)"></td>
-      <td><input type="text" value="${t.kw}" onchange="updateData(${index}, 'kw', this.value)"></td>
-      <td>
-        <div style="display: flex; gap: 0.3rem; align-items: center;">
-          <input type="text" value="${t.von}" onchange="updateData(${index}, 'von', this.value)">
-          <span>-</span>
-          <input type="text" value="${t.bis}" onchange="updateData(${index}, 'bis', this.value)">
-        </div>
-      </td>
-      <td>
-        <select onchange="updateData(${index}, 'status', this.value)">
-          <option value="frei" ${t.status === 'frei' ? 'selected' : ''}>frei</option>
-          <option value="belegt" ${t.status === 'belegt' ? 'selected' : ''}>belegt</option>
-          <option value="vorgemerkt" ${t.status === 'vorgemerkt' ? 'selected' : ''}>vorgemerkt</option>
-        </select>
-      </td>
-      <td><input type="text" value="${t.betrieb || ''}" onchange="updateData(${index}, 'betrieb', this.value)"></td>
-      <td><button class="btn btn-danger" onclick="deleteRow(${index})">Löschen</button></td>
-    </tr>
-  `).join('');
-}
-
-function updateData(index, field, value) {
-  termineData[index][field] = value;
-}
-
-function addRow() {
-  termineData.push({ sw: 'SW X', kw: 'KW X', von: '01.01.2026', bis: '05.01.2026', status: 'frei', betrieb: '' });
-  renderTable();
-}
-
-function deleteRow(index) {
-  termineData.splice(index, 1);
-  renderTable();
-}
-
-function generateYAML() {
-  let yaml = "legende:\n";
-  rawLegende.forEach(item => {
-    yaml += `  - farbe: "${item.farbe}"\n`;
-    yaml += `    label: "${item.label}"\n`;
-    yaml += `    status: "${item.status}"\n`;
-  });
-
-  yaml += "\ntermine:\n";
-  termineData.forEach(item => {
-    yaml += `  - sw: "${item.sw}"\n`;
-    yaml += `    kw: "${item.kw}"\n`;
-    yaml += `    von: "${item.von}"\n`;
-    yaml += `    bis: "${item.bis}"\n`;
-    yaml += `    betrieb: "${item.betrieb || ''}"\n`;
-    yaml += `    status: "${item.status}"\n`;
-  });
-
-  return yaml;
-}
-
-function utf8ToBase64(str) {
-  return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
-    return String.fromCharCode('0x' + p1);
-  }));
-}
-
-async function saveData() {
-  const password = document.getElementById('pat').value.trim();
-  if (!password) {
-    alert("Bitte gib dein Admin-Passwort ein!");
-    return;
-  }
-
-  const yamlContent = generateYAML();
-
-  try {
-    const res = await fetch("DEINE_CLOUDFLARE_WORKER_URL", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        password: password,
-        content: yamlContent
-      })
-    });
-
-    if (res.ok) {
-      alert("Erfolgreich gespeichert!");
-    } else {
-      const errText = await res.text();
-      alert("Fehler beim Speichern: " + errText);
+    function renderTable() {
+      const tbody = document.getElementById('admin-table-body');
+      tbody.innerHTML = termineData.map((t, index) => `
+        <tr>
+          <td><input type="text" value="${t.sw}" onchange="updateData(${index}, 'sw', this.value)"></td>
+          <td><input type="text" value="${t.kw}" onchange="updateData(${index}, 'kw', this.value)"></td>
+          <td>
+            <div style="display: flex; gap: 0.3rem; align-items: center;">
+              <input type="text" value="${t.von}" onchange="updateData(${index}, 'von', this.value)">
+              <span>-</span>
+              <input type="text" value="${t.bis}" onchange="updateData(${index}, 'bis', this.value)">
+            </div>
+          </td>
+          <td>
+            <select onchange="updateData(${index}, 'status', this.value)">
+              <option value="frei" ${t.status === 'frei' ? 'selected' : ''}>frei</option>
+              <option value="belegt" ${t.status === 'belegt' ? 'selected' : ''}>belegt</option>
+              <option value="vorgemerkt" ${t.status === 'vorgemerkt' ? 'selected' : ''}>vorgemerkt</option>
+            </select>
+          </td>
+          <td><input type="text" value="${t.betrieb || ''}" onchange="updateData(${index}, 'betrieb', this.value)"></td>
+          <td><button class="btn btn-danger" onclick="deleteRow(${index})">Löschen</button></td>
+        </tr>
+      `).join('');
     }
-  } catch (err) {
-    alert("Netzwerkfehler: " + err.message);
-  }
-}
 
-    const shaData = await shaRes.json();
-    const currentSha = shaData.sha;
-
-    // 2. Datei speichern
-    const yamlContent = generateYAML();
-    const base64Content = utf8ToBase64(yamlContent);
-
-    const saveRes = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml", {
-      method: "PUT",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-        "Accept": "application/vnd.github.v3+json"
-      },
-      body: JSON.stringify({
-        message: "Update termine via Admin Panel",
-        content: base64Content,
-        sha: currentSha
-      })
-    });
-
-    if (saveRes.ok) {
-      alert("Erfolgreich gespeichert!");
-    } else {
-      const errorData = await saveRes.json();
-      alert("Fehler beim Speichern: " + errorData.message);
+    function updateData(index, field, value) {
+      termineData[index][field] = value;
     }
-  } catch (err) {
-    alert("Fehler: " + err.message);
-  }
-}
 
-loadData();
+    function addRow() {
+      termineData.push({ sw: 'SW X', kw: 'KW X', von: '01.01.2026', bis: '05.01.2026', status: 'frei', betrieb: '' });
+      renderTable();
+    }
+
+    function deleteRow(index) {
+      termineData.splice(index, 1);
+      renderTable();
+    }
+
+    function generateYAML() {
+      let yaml = "legende:\n";
+      rawLegende.forEach(item => {
+        yaml += `  - farbe: "${item.farbe}"\n`;
+        yaml += `    label: "${item.label}"\n`;
+        yaml += `    status: "${item.status}"\n`;
+      });
+
+      yaml += "\ntermine:\n";
+      termineData.forEach(item => {
+        yaml += `  - sw: "${item.sw}"\n`;
+        yaml += `    kw: "${item.kw}"\n`;
+        yaml += `    von: "${item.von}"\n`;
+        yaml += `    bis: "${item.bis}"\n`;
+        yaml += `    betrieb: "${item.betrieb || ''}"\n`;
+        yaml += `    status: "${item.status}"\n`;
+      });
+
+      return yaml;
+    }
+
+    async function saveData() {
+      const password = document.getElementById('pat').value.trim();
+      if (!password) {
+        alert("Bitte gib dein Admin-Passwort ein!");
+        return;
+      }
+
+      const yamlContent = generateYAML();
+
+      try {
+        const res = await fetch("DEINE_CLOUDFLARE_WORKER_URL", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            password: password,
+            content: yamlContent
+          })
+        });
+
+        if (res.ok) {
+          alert("Erfolgreich gespeichert!");
+        } else {
+          const errText = await res.text();
+          alert("Fehler beim Speichern: " + errText);
+        }
+      } catch (err) {
+        alert("Netzwerkfehler: " + err.message);
+      }
+    }
+
+    loadData();
   </script>
 </body>
 </html>
