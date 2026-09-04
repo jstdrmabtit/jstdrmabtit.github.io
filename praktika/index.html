@@ -11,12 +11,9 @@
       --border: #30363d;
       --text: #c9d1d9;
       --heading: #f0f6fc;
-      --frei-bg: rgba(46, 160, 67, 0.15);
-      --frei-text: #3fb950;
-      --belegt-bg: rgba(248, 81, 73, 0.15);
-      --belegt-text: #f85149;
-      --vorgemerkt-bg: rgba(210, 153, 34, 0.15);
-      --vorgemerkt-text: #d29922;
+      --status-frei: #238636;
+      --status-belegt: #da3633;
+      --status-vorgemerkt: #d29922;
     }
 
     body {
@@ -37,15 +34,19 @@
     h1 { color: var(--heading); margin-bottom: 0.5rem; }
     p.subtitle { color: #8b949e; margin-bottom: 2rem; }
 
-    .legend-card {
+    .card {
       background-color: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 1rem 1.5rem;
+      padding: 1.5rem;
       margin-bottom: 1.5rem;
+    }
+
+    .legend-container {
       display: flex;
       gap: 1.5rem;
-      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
     }
 
     .legend-item {
@@ -55,82 +56,84 @@
       font-size: 0.9rem;
     }
 
-    .dot {
-      width: 10px;
-      height: 10px;
+    .badge-dot {
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
+      display: inline-block;
     }
 
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 1.5rem;
+    .dot-frei { background-color: var(--status-frei); }
+    .dot-belegt { background-color: var(--status-belegt); }
+    .dot-vorgemerkt { background-color: var(--status-vorgemerkt); }
+
+    .table-container {
+      overflow-x: auto;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      text-align: left;
     }
 
     th, td {
       padding: 0.8rem;
       border-bottom: 1px solid var(--border);
+      text-align: left;
     }
 
     th {
-      color: #8b949e;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      background-color: #21262d;
+      color: var(--heading);
+      font-size: 0.85rem;
+      font-weight: 600;
     }
-
-    td { font-size: 0.9rem; }
 
     .badge {
-      display: inline-block;
       padding: 0.25rem 0.6rem;
       border-radius: 12px;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       font-weight: 600;
       text-transform: capitalize;
+      color: white;
+      display: inline-block;
     }
 
-    .badge-frei { background-color: var(--frei-bg); color: var(--frei-text); }
-    .badge-belegt { background-color: var(--belegt-bg); color: var(--belegt-text); }
-    .badge-vorgemerkt { background-color: var(--vorgemerkt-bg); color: var(--vorgemerkt-text); }
+    .status-frei { background-color: var(--status-frei); }
+    .status-belegt { background-color: var(--status-belegt); }
+    .status-vorgemerkt { background-color: var(--status-vorgemerkt); }
   </style>
 </head>
 <body>
 
   <div class="container">
     <h1>Praktikumskalender</h1>
-    <p class="subtitle">Aktuelle Übersicht der Schulwochen und Praktikumszeiten.</p>
-
-    <div class="legend-card" id="legend-container">
-      <div class="legend-item"><span class="dot" style="background: #238636;"></span> Frei / Verfügbar</div>
-      <div class="legend-item"><span class="dot" style="background: #da3633;"></span> Belegt</div>
-      <div class="legend-item"><span class="dot" style="background: #d29922;"></span> Vorgemerkt</div>
-    </div>
+    <p class="subtitle">Übersicht der Verfügbarkeiten und Termine.</p>
 
     <div class="card">
-      <table>
-        <thead>
-          <tr>
-            <th>SW</th>
-            <th>KW</th>
-            <th>ZEITRAUM</th>
-            <th>STATUS</th>
-            <th>BETRIEB / EINRICHTUNG</th>
-          </tr>
-        </thead>
-        <tbody id="kalender-body">
-          <tr>
-            <td colspan="5" style="text-align: center; padding: 2rem;">Lade Kalenderdaten...</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="legend-container">
+        <div class="legend-item"><span class="badge-dot dot-frei"></span> Frei</div>
+        <div class="legend-item"><span class="badge-dot dot-vorgemerkt"></span> Vorgemerkt</div>
+        <div class="legend-item"><span class="badge-dot dot-belegt"></span> Belegt</div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Schulwoche / KW</th>
+              <th>Zeitraum (Von - Bis)</th>
+              <th>Status</th>
+              <th>Betrieb / Einrichtung</th>
+            </tr>
+          </thead>
+          <tbody id="kalender-body">
+            <tr>
+              <td colspan="4" style="text-align: center; padding: 2rem;">Lade Kalenderdaten...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -151,9 +154,10 @@
           currentSection = 'termine';
           currentItem = null;
           continue;
-        } else if (trimmed.endsWith(':') && !trimmed.startsWith('-')) {
+        } else if (trimmed === 'legende:') {
           if (currentItem && currentSection === 'termine') termine.push(currentItem);
-          currentSection = null;
+          currentSection = 'legende';
+          currentItem = null;
           continue;
         }
 
@@ -180,41 +184,39 @@
       return { termine };
     }
 
-    async function loadKalender() {
+    async function loadFrontendData() {
       const tbody = document.getElementById('kalender-body');
       try {
         const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?t=" + Date.now());
-        if (!res.ok) throw new Error("Konnte Daten nicht laden");
+        if (!res.ok) throw new Error("HTTP Fehler " + res.status);
 
         const text = await res.text();
         const parsed = parseYAML(text);
 
-        if (parsed.termine.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Keine Termine vorhanden.</td></tr>`;
+        if (!parsed.termine || parsed.termine.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem;">Keine Termine vorhanden.</td></tr>`;
           return;
         }
 
         tbody.innerHTML = parsed.termine.map(t => {
-          const statusClass = t.status === 'belegt' ? 'badge-belegt' : (t.status === 'vorgemerkt' ? 'badge-vorgemerkt' : 'badge-frei');
-          const betriebText = t.betrieb && t.betrieb.trim() !== '' ? t.betrieb : '-';
+          const statusClass = t.status ? t.status.toLowerCase() : 'frei';
           return `
             <tr>
-              <td><strong>${t.sw || ''}</strong></td>
-              <td>${t.kw || ''}</td>
+              <td><strong>${t.sw || ''}</strong> (${t.kw || ''})</td>
               <td>${t.von || ''} – ${t.bis || ''}</td>
-              <td><span class="badge ${statusClass}">${t.status || 'frei'}</span></td>
-              <td>${betriebText}</td>
+              <td><span class="badge status-${statusClass}">${t.status || 'frei'}</span></td>
+              <td>${t.betrieb || '-'}</td>
             </tr>
           `;
         }).join('');
+
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #f85149;">Fehler beim Laden der Daten.</td></tr>`;
+        console.error("Fehler beim Laden:", err);
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--status-belegt); padding: 2rem;">Fehler beim Laden der Daten.</td></tr>`;
       }
     }
 
-    loadKalender();
+    loadFrontendData();
   </script>
 </body>
 </html>
-
-
