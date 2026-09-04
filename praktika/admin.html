@@ -157,13 +157,20 @@
       </div>
 
       <button class="btn btn-add" onclick="addRow()">+ Neuen Termin hinzufügen</button>
-      <button class="btn" onclick="saveData()">Änderungen Speichern</button>
+      <button class="btn" id="save-btn" onclick="saveData()">Änderungen Speichern</button>
     </div>
   </div>
 
   <script>
+    const REPO_URL = "https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml";
+    const WORKER_URL = "https://dark-scene-3aef.dssd00598.workers.dev";
+
     let rawLegende = [];
     let termineData = [];
+
+    function decodeBase64UTF8(str) {
+      return new TextDecoder().decode(Uint8Array.from(atob(str.replace(/\s/g, '')), c => c.charCodeAt(0)));
+    }
 
     function parseYAML(yamlString) {
       const lines = yamlString.split('\n');
@@ -215,32 +222,34 @@
     }
 
     async function loadData() {
-  try {
-    const res = await fetch("https://cdn.jsdelivr.net/gh/jstdrmabtit/jstdrmabtit.github.io@latest/_data/meinedaten.yml?t=" + new Date().getTime());
-    if (!res.ok) throw new Error("Datei konnte nicht geladen werden.");
-    
-    const yamlText = await res.text();
-    const parsed = parseYAML(yamlText);
-    rawLegende = parsed.legende;
-    termineData = parsed.termine;
+      try {
+        const res = await fetch(`${REPO_URL}?t=${Date.now()}`);
+        if (!res.ok) throw new Error("Netzwerkfehler beim Laden der Datei.");
 
-    renderTable();
-  } catch (err) {
-    alert("Fehler beim Laden der Daten: " + err.message);
-  }
-}
+        const data = await res.json();
+        const yamlText = decodeBase64UTF8(data.content);
+        
+        const parsed = parseYAML(yamlText);
+        rawLegende = parsed.legende;
+        termineData = parsed.termine;
+
+        renderTable();
+      } catch (err) {
+        alert("Fehler beim Laden der Daten: " + err.message);
+      }
+    }
 
     function renderTable() {
       const tbody = document.getElementById('admin-table-body');
       tbody.innerHTML = termineData.map((t, index) => `
         <tr>
-          <td><input type="text" value="${t.sw}" onchange="updateData(${index}, 'sw', this.value)"></td>
-          <td><input type="text" value="${t.kw}" onchange="updateData(${index}, 'kw', this.value)"></td>
+          <td><input type="text" value="${escapeHtml(t.sw || '')}" onchange="updateData(${index}, 'sw', this.value)"></td>
+          <td><input type="text" value="${escapeHtml(t.kw || '')}" onchange="updateData(${index}, 'kw', this.value)"></td>
           <td>
             <div style="display: flex; gap: 0.3rem; align-items: center;">
-              <input type="text" value="${t.von}" onchange="updateData(${index}, 'von', this.value)">
+              <input type="text" value="${escapeHtml(t.von || '')}" onchange="updateData(${index}, 'von', this.value)">
               <span>-</span>
-              <input type="text" value="${t.bis}" onchange="updateData(${index}, 'bis', this.value)">
+              <input type="text" value="${escapeHtml(t.bis || '')}" onchange="updateData(${index}, 'bis', this.value)">
             </div>
           </td>
           <td>
@@ -250,10 +259,14 @@
               <option value="vorgemerkt" ${t.status === 'vorgemerkt' ? 'selected' : ''}>vorgemerkt</option>
             </select>
           </td>
-          <td><input type="text" value="${t.betrieb || ''}" onchange="updateData(${index}, 'betrieb', this.value)"></td>
+          <td><input type="text" value="${escapeHtml(t.betrieb || '')}" onchange="updateData(${index}, 'betrieb', this.value)"></td>
           <td><button class="btn btn-danger" onclick="deleteRow(${index})">Löschen</button></td>
         </tr>
       `).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/"/g, '&quot;');
     }
 
     function updateData(index, field, value) {
@@ -273,65 +286,68 @@
     function generateYAML() {
       let yaml = "legende:\n";
       rawLegende.forEach(item => {
-        yaml += `  - farbe: "${item.farbe}"\n`;
-        yaml += `    label: "${item.label}"\n`;
-        yaml += `    status: "${item.status}"\n`;
+        yaml += `  - farbe: "${item.farbe || ''}"\n`;
+        yaml += `    label: "${item.label || ''}"\n`;
+        yaml += `    status: "${item.status || ''}"\n`;
       });
 
       yaml += "\ntermine:\n";
       termineData.forEach(item => {
-        yaml += `  - sw: "${item.sw}"\n`;
-        yaml += `    kw: "${item.kw}"\n`;
-        yaml += `    von: "${item.von}"\n`;
-        yaml += `    bis: "${item.bis}"\n`;
+        yaml += `  - sw: "${item.sw || ''}"\n`;
+        yaml += `    kw: "${item.kw || ''}"\n`;
+        yaml += `    von: "${item.von || ''}"\n`;
+        yaml += `    bis: "${item.bis || ''}"\n`;
         yaml += `    betrieb: "${item.betrieb || ''}"\n`;
-        yaml += `    status: "${item.status}"\n`;
+        yaml += `    status: "${item.status || 'frei'}"\n`;
       });
 
       return yaml;
     }
 
     async function saveData() {
-  const password = document.getElementById('pat').value.trim();
-  if (!password) {
-    alert("Bitte gib dein Admin-Passwort ein!");
-    return;
-  }
+      const password = document.getElementById('pat').value.trim();
+      if (!password) {
+        alert("Bitte gib dein Admin-Passwort ein!");
+        return;
+      }
 
-  const yamlContent = generateYAML();
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true;
+      btn.textContent = "Speichere...";
 
-  try {
-    // 1. Aktuelle SHA direkt von GitHub laden (öffentlicher Lesezugriff)
-    const shaRes = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml");
-    if (!shaRes.ok) {
-      throw new Error("Konnte Datei-SHA nicht von GitHub abrufen.");
+      const yamlContent = generateYAML();
+
+      try {
+        const shaRes = await fetch(`${REPO_URL}?t=${Date.now()}`);
+        if (!shaRes.ok) throw new Error("Konnte Datei-SHA nicht von GitHub abrufen.");
+        
+        const shaData = await shaRes.json();
+        const currentSha = shaData.sha;
+
+        const res = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            password: password,
+            content: yamlContent,
+            sha: currentSha
+          })
+        });
+
+        if (res.ok) {
+          alert("Erfolgreich gespeichert!");
+          loadData();
+        } else {
+          const errText = await res.text();
+          alert("Fehler beim Speichern: " + errText);
+        }
+      } catch (err) {
+        alert("Fehler: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Änderungen Speichern";
+      }
     }
-    const shaData = await shaRes.json();
-    const currentSha = shaData.sha;
-
-    // 2. Daten inklusive SHA an den Cloudflare Worker senden
-    const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        password: password,
-        content: yamlContent,
-        sha: currentSha
-      })
-    });
-
-    if (res.ok) {
-      alert("Erfolgreich gespeichert!");
-    } else {
-      const errText = await res.text();
-      alert("Fehler beim Speichern: " + errText);
-    }
-  } catch (err) {
-    alert("Fehler: " + err.message);
-  }
-}
 
     loadData();
   </script>
