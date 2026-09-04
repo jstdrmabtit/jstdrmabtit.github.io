@@ -3,18 +3,6 @@ legende:
     label: "Frei / Verfügbar"
 
 termine:
-  - sw: ""
-    kw: ""
-    von: ""
-    bis: ""
-    betrieb: ""
-    status: "frei"
-  - sw: ""
-    kw: ""
-    von: ""
-    bis: ""
-    betrieb: ""
-    status: "frei"
   - sw: "SW 1"
     kw: "KW 41"
     von: "05.10.2026"
