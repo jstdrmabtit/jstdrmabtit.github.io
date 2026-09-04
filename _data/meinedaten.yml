@@ -1,0 +1,15 @@
+legende:
+  - farbe: "#238636"
+    label: "Frei"
+    status: "frei"
+  - farbe: "#da3633"
+    label: "Belegt"
+    status: "belegt"
+
+termine:
+  - sw: "SW 1"
+    kw: "KW 38"
+    von: "15.09.2026"
+    bis: "19.09.2026"
+    betrieb: "Landratsamt"
+    status: "belegt"
