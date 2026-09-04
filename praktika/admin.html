@@ -162,18 +162,13 @@
   </div>
 
   <script>
-    const REPO_URL = "https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml";
-    const WORKER_URL = "https://dark-scene-3aef.dssd00598.workers.dev";
-
     let rawLegende = [];
     let termineData = [];
 
-    function decodeBase64UTF8(str) {
-      return new TextDecoder().decode(Uint8Array.from(atob(str.replace(/\s/g, '')), c => c.charCodeAt(0)));
-    }
-
     function parseYAML(yamlString) {
-      const lines = yamlString.split('\n');
+      if (!yamlString || !yamlString.trim()) return { legende: [], termine: [] };
+
+      const lines = yamlString.replace(/\r\n/g, '\n').split('\n');
       let legende = [];
       let termine = [];
       let currentSection = null;
@@ -184,36 +179,45 @@
         if (!trimmed || trimmed.startsWith('#')) continue;
 
         if (trimmed === 'legende:') {
+          if (currentItem && currentSection) {
+            if (currentSection === 'legende') legende.push(currentItem);
+            if (currentSection === 'termine') termine.push(currentItem);
+            currentItem = null;
+          }
           currentSection = 'legende';
           continue;
         } else if (trimmed === 'termine:') {
-          if (currentItem && currentSection === 'legende') legende.push(currentItem);
+          if (currentItem && currentSection) {
+            if (currentSection === 'legende') legende.push(currentItem);
+            if (currentSection === 'termine') termine.push(currentItem);
+            currentItem = null;
+          }
           currentSection = 'termine';
-          currentItem = null;
           continue;
         }
 
         if (trimmed.startsWith('- ')) {
-          if (currentItem) {
+          if (currentItem && currentSection) {
             if (currentSection === 'legende') legende.push(currentItem);
             if (currentSection === 'termine') termine.push(currentItem);
           }
           currentItem = {};
-          const firstProp = trimmed.substring(2).split(':');
-          if (firstProp.length >= 2) {
-            const key = firstProp[0].trim();
-            const val = firstProp.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+          const rest = trimmed.substring(2).trim();
+          const colonIdx = rest.indexOf(':');
+          if (colonIdx !== -1) {
+            const key = rest.substring(0, colonIdx).trim();
+            const val = rest.substring(colonIdx + 1).trim().replace(/^["']|["']$/g, '');
             currentItem[key] = val;
           }
         } else if (currentItem && trimmed.includes(':')) {
-          const parts = trimmed.split(':');
-          const key = parts[0].trim();
-          const val = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+          const colonIdx = trimmed.indexOf(':');
+          const key = trimmed.substring(0, colonIdx).trim();
+          const val = trimmed.substring(colonIdx + 1).trim().replace(/^["']|["']$/g, '');
           currentItem[key] = val;
         }
       }
 
-      if (currentItem) {
+      if (currentItem && currentSection) {
         if (currentSection === 'legende') legende.push(currentItem);
         if (currentSection === 'termine') termine.push(currentItem);
       }
@@ -222,31 +226,26 @@
     }
 
     async function loadData() {
-  const tbody = document.getElementById('admin-table-body');
-  try {
-    // Direktes Laden der Raw-Datei von GitHub ohne zusätzliche Custom-Header (vermeidet CORS-Sperren)
-    const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?t=" + Date.now());
-    
-    if (!res.ok) {
-      throw new Error(`HTTP-Fehler ${res.status}: Datei konnte nicht gefunden werden.`);
-    }
+      const tbody = document.getElementById('admin-table-body');
+      try {
+        const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?t=" + Date.now());
+        if (!res.ok) throw new Error("HTTP-Fehler " + res.status);
 
-    const yamlText = await res.text();
-    const parsed = parseYAML(yamlText);
-    
-    rawLegende = parsed.legende || [];
-    termineData = parsed.termine || [];
+        const yamlText = await res.text();
+        const parsed = parseYAML(yamlText);
 
-    if (termineData.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;">Keine Termine vorhanden.</td></tr>`;
-    } else {
-      renderTable();
+        rawLegende = parsed.legende;
+        termineData = parsed.termine;
+
+        if (termineData.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;">Keine Termine im YAML gefunden. Klicke auf "+ Neuen Termin hinzufügen".</td></tr>`;
+        } else {
+          renderTable();
+        }
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 2rem;">Fehler: ${err.message}</td></tr>`;
+      }
     }
-  } catch (err) {
-    console.error("Ladefehler:", err);
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 2rem;">Fehler beim Laden: ${err.message}</td></tr>`;
-  }
-}
 
     function renderTable() {
       const tbody = document.getElementById('admin-table-body');
@@ -289,16 +288,25 @@
 
     function deleteRow(index) {
       termineData.splice(index, 1);
-      renderTable();
+      if (termineData.length === 0) {
+        document.getElementById('admin-table-body').innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;">Keine Termine im YAML gefunden. Klicke auf "+ Neuen Termin hinzufügen".</td></tr>`;
+      } else {
+        renderTable();
+      }
     }
 
     function generateYAML() {
       let yaml = "legende:\n";
-      rawLegende.forEach(item => {
-        yaml += `  - farbe: "${item.farbe || ''}"\n`;
-        yaml += `    label: "${item.label || ''}"\n`;
-        yaml += `    status: "${item.status || ''}"\n`;
-      });
+      if (rawLegende.length > 0) {
+        rawLegende.forEach(item => {
+          yaml += `  - farbe: "${item.farbe || ''}"\n`;
+          yaml += `    label: "${item.label || ''}"\n`;
+          yaml += `    status: "${item.status || ''}"\n`;
+        });
+      } else {
+        yaml += `  - farbe: "#238636"\n    label: "Frei"\n    status: "frei"\n`;
+        yaml += `  - farbe: "#da3633"\n    label: "Belegt"\n    status: "belegt"\n`;
+      }
 
       yaml += "\ntermine:\n";
       termineData.forEach(item => {
@@ -320,6 +328,11 @@
         return;
       }
 
+      if (termineData.length === 0) {
+        alert("Bitte füge mindestens einen Termin hinzu, bevor du speicherst.");
+        return;
+      }
+
       const btn = document.getElementById('save-btn');
       btn.disabled = true;
       btn.textContent = "Speichere...";
@@ -327,13 +340,13 @@
       const yamlContent = generateYAML();
 
       try {
-        const shaRes = await fetch(`${REPO_URL}?t=${Date.now()}`);
+        const shaRes = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml?t=" + Date.now());
         if (!shaRes.ok) throw new Error("Konnte Datei-SHA nicht von GitHub abrufen.");
-        
+
         const shaData = await shaRes.json();
         const currentSha = shaData.sha;
 
-        const res = await fetch(WORKER_URL, {
+        const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
