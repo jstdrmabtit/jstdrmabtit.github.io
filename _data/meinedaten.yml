@@ -26,7 +26,7 @@ termine:
     von: "23.11.2026"
     bis: "27.11.2026"
     betrieb: "Mehrere"
-    status: "frei"
+    status: "vorgemerkt"
   - sw: "SW 5"
     kw: "KW 50"
     von: "07.12.2026"
