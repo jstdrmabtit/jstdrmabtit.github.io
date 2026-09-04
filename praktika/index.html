@@ -187,12 +187,8 @@
     async function loadFrontendData() {
   const tbody = document.getElementById('kalender-body');
   try {
-    const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?nocache=" + Math.random().toString(36).substring(7), {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
-      }
-    });
+ const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?nocache=" + Math.random().toString(36).substring(7));
+    
     if (!res.ok) throw new Error("HTTP Fehler " + res.status);
 
     const text = await res.text();
