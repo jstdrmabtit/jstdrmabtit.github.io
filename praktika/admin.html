@@ -228,7 +228,7 @@
 async function loadData() {
   const tbody = document.getElementById('admin-table-body');
   try {
-    const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?nocache=" + Math.random().toString(36).substring(7));
+    const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev");
     if (!res.ok) throw new Error("HTTP-Fehler " + res.status);
 
     const yamlText = await res.text();
