@@ -1,6 +1,3 @@
----
-layout: null
----
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -10,345 +7,255 @@ layout: null
   <style>
     :root {
       --bg: #0d1117;
-      --card: #161b22;
+      --card-bg: #161b22;
       --border: #30363d;
       --text: #c9d1d9;
-      --accent: #238636;
-      --status-gruen: #238636;
-      --status-rot: #da3633;
-      --status-gelb: #9e6a03;
+      --heading: #f0f6fc;
+      --primary: #238636;
+      --primary-hover: #2ea043;
+      --danger: #da3633;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
       color: var(--text);
-      max-width: 1000px;
-      margin: 30px auto;
-      padding: 0 20px 50px 20px;
+      margin: 0;
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
     }
 
-    h1 { margin-bottom: 5px; }
-    p.subtitle { color: #8b949e; margin-bottom: 25px; }
+    .container {
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    h1 { color: var(--heading); margin-bottom: 0.5rem; }
+    p.subtitle { color: #8b949e; margin-bottom: 2rem; }
 
     .card {
-      background: var(--card);
+      background-color: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
-    .auth-group {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    input, select {
-      background: #0d1117;
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 8px 10px;
       border-radius: 6px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--heading);
       font-size: 0.9rem;
     }
 
-    input[type="password"] { flex-grow: 1; }
-
-    .table-container {
-      overflow-x: auto;
-      margin-top: 15px;
+    input, select {
+      width: 100%;
+      padding: 0.5rem;
+      background-color: #010409;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      box-sizing: border-box;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      text-align: left;
+      margin-bottom: 1rem;
     }
 
     th, td {
-      padding: 10px;
+      padding: 0.5rem;
       border-bottom: 1px solid var(--border);
+      text-align: left;
     }
 
     th {
-      background: #21262d;
-      color: #8b949e;
+      background-color: #21262d;
+      color: var(--heading);
       font-size: 0.85rem;
-      text-transform: uppercase;
     }
 
-    .small-input { width: 65px; }
-    .date-input { width: 85px; }
-
-    .status-select {
-      font-weight: bold;
-      border-radius: 20px;
-      padding: 6px 12px;
-      cursor: pointer;
-      border: none;
-    }
-
-    .status-select[data-status="frei"] { background: rgba(46,164,79,0.25); color: #3fb950; border: 1px solid var(--status-gruen); }
-    .status-select[data-status="belegt"] { background: rgba(248,81,73,0.25); color: #f85149; border: 1px solid var(--status-rot); }
-    .status-select[data-status="vorgemerkt"] { background: rgba(210,153,34,0.25); color: #d29922; border: 1px solid var(--status-gelb); }
-
-    .betrieb-input {
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .btn-action {
-      background: #21262d;
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 10px 15px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      margin-top: 15px;
-    }
-
-    .btn-action:hover { background: #30363d; }
-
-    .btn-delete {
-      background: rgba(248,81,73,0.15);
-      color: #f85149;
-      border: 1px solid rgba(248,81,73,0.4);
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .btn-delete:hover { background: rgba(248,81,73,0.3); }
-
-    .btn-save {
-      background: var(--accent);
+    .btn {
+      background-color: var(--primary);
       color: white;
       border: none;
-      padding: 14px 20px;
-      font-size: 1rem;
-      font-weight: bold;
+      padding: 0.6rem 1.2rem;
       border-radius: 6px;
       cursor: pointer;
+      font-weight: 600;
       width: 100%;
-      margin-top: 20px;
-      transition: background 0.2s;
     }
 
-    .btn-save:hover { background: #2ea44f; }
+    .btn:hover { background-color: var(--primary-hover); }
 
-    .status-msg {
-      padding: 12px;
-      border-radius: 6px;
-      display: none;
-      margin-bottom: 20px;
-      font-weight: bold;
+    .btn-danger {
+      background-color: var(--danger);
+      padding: 0.3rem 0.6rem;
+      font-size: 0.8rem;
+      width: auto;
     }
-    .success { background: rgba(46,164,79,0.2); color: #3fb950; border: 1px solid rgba(46,164,79,0.4); }
-    .error { background: rgba(248,81,73,0.2); color: #f85149; border: 1px solid rgba(248,81,73,0.4); }
+
+    .btn-add {
+      background-color: #21262d;
+      border: 1px solid var(--border);
+      color: var(--text);
+      margin-bottom: 1rem;
+      width: auto;
+    }
   </style>
 </head>
 <body>
 
-  <h1>Praktikums-Verwaltung</h1>
-  <p class="subtitle">Verwalte deine Schulwochen, Daten und Praktikumstermine.</p>
+  <div class="container">
+    <h1>Praktikums-Verwaltung</h1>
+    <p class="subtitle">Verwalte deine Schulwochen, Daten und den Belegungsstatus direkt über GitHub.</p>
 
-  <div id="statusBox" class="status-msg"></div>
-
-  <div class="card">
-    <div class="auth-group">
-      <label for="password"><strong>Admin-Passwort:</strong></label>
-      <input type="password" id="password" placeholder="Passwort eingeben...">
+    <div class="card">
+      <div class="form-group">
+        <label for="pat">Admin-Passwort:</label>
+        <input type="password" id="pat" placeholder="GitHub Personal Access Token eintragen...">
+      </div>
     </div>
-  </div>
 
-  <div class="card">
-    <h3>Terminübersicht</h3>
-    <div class="table-container">
+    <div class="card">
+      <h2>Terminübersicht</h2>
       <table>
         <thead>
           <tr>
-            <th>SW</th>
-            <th>KW</th>
-            <th>Von – Bis</th>
-            <th>Status</th>
-            <th>Betrieb / Einrichtung</th>
-            <th>Aktion</th>
+            <th style="width: 10%;">SW</th>
+            <th style="width: 10%;">KW</th>
+            <th style="width: 30%;">VON – BIS</th>
+            <th style="width: 20%;">STATUS</th>
+            <th style="width: 20%;">BETRIEB / EINRICHTUNG</th>
+            <th style="width: 10%;">AKTION</th>
           </tr>
         </thead>
-        <tbody id="tableBody">
-          <tr><td colspan="6" style="text-align:center;">Lade Daten...</td></tr>
+        <tbody id="admin-table-body">
+          <tr>
+            <td colspan="6" style="text-align: center;">Lade Daten...</td>
+          </tr>
         </tbody>
       </table>
-    </div>
 
-    <button class="btn-action" onclick="addRow()">+ Neuen Termin hinzufügen</button>
-    <button class="btn-save" onclick="saveData()">Änderungen Speichern</button>
+      <button class="btn btn-add" onclick="addRow()">+ Neuen Termin hinzufügen</button>
+      <button class="btn" onclick="saveData()">Änderungen Speichern</button>
+    </div>
   </div>
 
   <script>
-    const WORKER_URL = "https://dark-scene-3aef.dssd00598.workers.dev";
-    let currentSha = "";
     let rawLegende = [];
     let termineData = [];
+    let currentSha = "";
 
-    function parseYAML(text) {
-      const lines = text.split('\n');
-      let inTermine = false;
-      let inLegende = false;
-      let termine = [];
+    function parseYAML(yamlString) {
+      const lines = yamlString.split('\n');
       let legende = [];
+      let termine = [];
+      let currentSection = null;
       let currentItem = null;
 
-      lines.forEach(line => {
+      for (let line of lines) {
         const trimmed = line.trim();
-        if (!trimmed) return;
+        if (!trimmed || trimmed.startsWith('#')) continue;
 
-        if (trimmed.startsWith('legende:')) { 
-          inLegende = true; 
-          inTermine = false; 
-          return; 
-        }
-        if (trimmed.startsWith('termine:')) { 
-          if (currentItem && inLegende) legende.push(currentItem);
-          inTermine = true; 
-          inLegende = false; 
+        if (trimmed === 'legende:') {
+          currentSection = 'legende';
+          continue;
+        } else if (trimmed === 'termine:') {
+          if (currentItem && currentSection === 'legende') legende.push(currentItem);
+          currentSection = 'termine';
           currentItem = null;
-          return; 
+          continue;
         }
 
         if (trimmed.startsWith('- ')) {
           if (currentItem) {
-            if (inLegende) legende.push(currentItem);
-            if (inTermine) termine.push(currentItem);
+            if (currentSection === 'legende') legende.push(currentItem);
+            if (currentSection === 'termine') termine.push(currentItem);
           }
           currentItem = {};
-        }
-
-        if (currentItem && trimmed.includes(':')) {
-          const parts = trimmed.replace(/^- /, '').split(':');
+          const firstProp = trimmed.substring(2).split(':');
+          if (firstProp.length >= 2) {
+            const key = firstProp[0].trim();
+            const val = firstProp.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+            currentItem[key] = val;
+          }
+        } else if (currentItem && trimmed.includes(':')) {
+          const parts = trimmed.split(':');
           const key = parts[0].trim();
-          let val = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+          const val = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
           currentItem[key] = val;
         }
-      });
+      }
 
       if (currentItem) {
-        if (inLegende) legende.push(currentItem);
-        if (inTermine) termine.push(currentItem);
+        if (currentSection === 'legende') legende.push(currentItem);
+        if (currentSection === 'termine') termine.push(currentItem);
       }
 
       return { legende, termine };
     }
 
-    function generateYAML(legende, termine) {
-      let yamlLines = ["legende:"];
-      
-      legende.forEach(item => {
-        yamlLines.push(`  - farbe: "${item.farbe || ''}"`);
-        yamlLines.push(`    label: "${item.label || ''}"`);
-      });
+    async function loadData() {
+      try {
+        const res = await fetch("https://cdn.jsdelivr.net/gh/jstdrmabtit/jstdrmabtit.github.io@main/_data/meinedaten.yml?timestamp=" + new Date().getTime());
+        if (!res.ok) throw new Error("Datei konnte nicht geladen werden.");
+        
+        const yamlText = await res.text();
+        const parsed = parseYAML(yamlText);
+        rawLegende = parsed.legende;
+        termineData = parsed.termine;
 
-      yamlLines.push("\ntermine:");
-      
-      termine.forEach(item => {
-        if (item.sw || item.kw || item.von || item.betrieb) {
-          yamlLines.push(`  - sw: "${item.sw || ''}"`);
-          yamlLines.push(`    kw: "${item.kw || ''}"`);
-          yamlLines.push(`    von: "${item.von || ''}"`);
-          yamlLines.push(`    bis: "${item.bis || ''}"`);
-          yamlLines.push(`    betrieb: "${item.betrieb || ''}"`);
-          yamlLines.push(`    status: "${item.status || 'frei'}"`);
+        const shaRes = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml");
+        if (shaRes.ok) {
+          const shaData = await shaRes.json();
+          currentSha = shaData.sha;
         }
-      });
 
-      return yamlLines.join("\n");
+        renderTable();
+      } catch (err) {
+        alert("Fehler beim Laden der Daten: " + err.message);
+      }
     }
-
-   async function loadData() {
-  try {
-    const res = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml?timestamp=" + new Date().getTime());
-    const data = await res.json();
-
-    // Prüfen, ob die Datei überhaupt gefunden wurde
-    if (!res.ok || !data.content) {
-      throw new Error(data.message || "Datei konnte nicht auf GitHub gefunden werden. Pfad prüfen!");
-    }
-
-    currentSha = data.sha;
-
-    const cleanedBase64 = data.content.replace(/\s/g, '');
-    const bytes = Uint8Array.from(atob(cleanedBase64), c => c.charCodeAt(0));
-    const yamlText = new TextDecoder('utf-8').decode(bytes);
-    
-    const parsed = parseYAML(yamlText);
-    rawLegende = parsed.legende;
-    termineData = parsed.termine;
-
-    renderTable();
-  } catch (err) {
-    alert("Fehler beim Laden der Daten: " + err.message);
-  }
-}
 
     function renderTable() {
-      const tbody = document.getElementById("tableBody");
-      tbody.innerHTML = "";
-
-      termineData.forEach((item, index) => {
-        const tr = document.createElement("tr");
-
-        tr.innerHTML = `
+      const tbody = document.getElementById('admin-table-body');
+      tbody.innerHTML = termineData.map((t, index) => `
+        <tr>
+          <td><input type="text" value="${t.sw}" onchange="updateData(${index}, 'sw', this.value)"></td>
+          <td><input type="text" value="${t.kw}" onchange="updateData(${index}, 'kw', this.value)"></td>
           <td>
-            <input type="text" class="small-input" value="${item.sw || ''}" onchange="updateField(${index}, 'sw', this.value)">
+            <div style="display: flex; gap: 0.2rem; align-items: center;">
+              <input type="text" value="${t.von}" onchange="updateData(${index}, 'von', this.value)">
+              <span>-</span>
+              <input type="text" value="${t.bis}" onchange="updateData(${index}, 'bis', this.value)">
+            </div>
           </td>
           <td>
-            <input type="text" class="small-input" value="${item.kw || ''}" onchange="updateField(${index}, 'kw', this.value)">
-          </td>
-          <td>
-            <input type="text" class="date-input" value="${item.von || ''}" onchange="updateField(${index}, 'von', this.value)"> – 
-            <input type="text" class="date-input" value="${item.bis || ''}" onchange="updateField(${index}, 'bis', this.value)">
-          </td>
-          <td>
-            <select class="status-select" data-status="${item.status || 'frei'}" onchange="updateStatusStyle(this, ${index})">
-              <option value="frei" ${item.status === 'frei' ? 'selected' : ''}>Frei / Verfügbar</option>
-              <option value="vorgemerkt" ${item.status === 'vorgemerkt' ? 'selected' : ''}>Vorgemerkt</option>
-              <option value="belegt" ${item.status === 'belegt' ? 'selected' : ''}>Belegt</option>
+            <select onchange="updateData(${index}, 'status', this.value)">
+              <option value="frei" ${t.status === 'frei' ? 'selected' : ''}>frei</option>
+              <option value="belegt" ${t.status === 'belegt' ? 'selected' : ''}>belegt</option>
+              <option value="vorgemerkt" ${t.status === 'vorgemerkt' ? 'selected' : ''}>vorgemerkt</option>
             </select>
           </td>
-          <td>
-            <input type="text" class="betrieb-input" value="${item.betrieb || ''}" onchange="updateField(${index}, 'betrieb', this.value)" placeholder="Betrieb eintragen...">
-          </td>
-          <td>
-            <button class="btn-delete" onclick="deleteRow(${index})">✕</button>
-          </td>
-        `;
-
-        tbody.appendChild(tr);
-      });
+          <td><input type="text" value="${t.betrieb || ''}" onchange="updateData(${index}, 'betrieb', this.value)"></td>
+          <td><button class="btn btn-danger" onclick="deleteRow(${index})">Löschen</button></td>
+        </tr>
+      `).join('');
     }
 
-    function updateField(index, field, value) {
+    function updateData(index, field, value) {
       termineData[index][field] = value;
     }
 
-    function updateStatusStyle(selectEl, index) {
-      const val = selectEl.value;
-      selectEl.setAttribute("data-status", val);
-      termineData[index].status = val;
-    }
-
     function addRow() {
-      termineData.push({
-        sw: "SW " + (termineData.length + 1),
-        kw: "KW",
-        von: "",
-        bis: "",
-        betrieb: "",
-        status: "frei"
-      });
+      termineData.push({ sw: 'SW X', kw: 'KW X', von: '01.01.2026', bis: '05.01.2026', status: 'frei', betrieb: '' });
       renderTable();
     }
 
@@ -357,45 +264,67 @@ layout: null
       renderTable();
     }
 
-    async function saveData() {
-      const password = document.getElementById("password").value;
-      const statusBox = document.getElementById("statusBox");
+    function generateYAML() {
+      let yaml = "legende:\n";
+      rawLegende.forEach(item => {
+        yaml += `  - farbe: "${item.farbe}"\n`;
+        yaml += `    label: "${item.label}"\n`;
+        yaml += `    status: "${item.status}"\n`;
+      });
 
-      if (!password) {
-        alert("Bitte gib dein Admin-Passwort ein!");
+      yaml += "\ntermine:\n";
+      termineData.forEach(item => {
+        yaml += `  - sw: "${item.sw}"\n`;
+        yaml += `    kw: "${item.kw}"\n`;
+        yaml += `    von: "${item.von}"\n`;
+        yaml += `    bis: "${item.bis}"\n`;
+        yaml += `    betrieb: "${item.betrieb || ''}"\n`;
+        yaml += `    status: "${item.status}"\n`;
+      });
+
+      return yaml;
+    }
+
+    function utf8ToBase64(str) {
+      return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+        return String.fromCharCode('0x' + p1);
+      }));
+    }
+
+    async function saveData() {
+      const token = document.getElementById('pat').value.trim();
+      if (!token) {
+        alert("Bitte gib zuerst dein Passwort / GitHub Token ein!");
         return;
       }
 
-      statusBox.style.display = "block";
-      statusBox.className = "status-msg";
-      statusBox.innerText = "Speichere auf GitHub...";
-
-      const updatedYamlContent = generateYAML(rawLegende, termineData);
+      const yamlContent = generateYAML();
+      const base64Content = utf8ToBase64(yamlContent);
 
       try {
-        const response = await fetch(WORKER_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const res = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml", {
+          method: "PUT",
+          headers: {
+            "Authorization": "token " + token,
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({
-            password: password,
-            updatedYamlContent: updatedYamlContent,
+            message: "Update termine via Admin Panel",
+            content: base64Content,
             sha: currentSha
           })
         });
 
-        const result = await response.json();
-
-        if (response.ok) {
-          statusBox.className = "status-msg success";
-          statusBox.innerText = "Erfolgreich gespeichert!";
-          loadData();
+        if (res.ok) {
+          const data = await res.json();
+          currentSha = data.content.sha;
+          alert("Erfolgreich gespeichert!");
         } else {
-          statusBox.className = "status-msg error";
-          statusBox.innerText = "Fehler: " + (result.error || "Unbekannter Fehler");
+          const errorData = await res.json();
+          alert("Fehler beim Speichern: " + errorData.message);
         }
       } catch (err) {
-        statusBox.className = "status-msg error";
-        statusBox.innerText = "Verbindungsfehler: " + err.message;
+        alert("Netzwerkfehler: " + err.message);
       }
     }
 
