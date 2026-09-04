@@ -225,27 +225,27 @@
       return { legende, termine };
     }
 
-    async function loadData() {
-      const tbody = document.getElementById('admin-table-body');
-      try {
-        const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?t=" + Date.now());
-        if (!res.ok) throw new Error("HTTP-Fehler " + res.status);
+async function loadData() {
+  const tbody = document.getElementById('admin-table-body');
+  try {
+    const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?nocache=" + Math.random().toString(36).substring(7));
+    if (!res.ok) throw new Error("HTTP-Fehler " + res.status);
 
-        const yamlText = await res.text();
-        const parsed = parseYAML(yamlText);
+    const yamlText = await res.text();
+    const parsed = parseYAML(yamlText);
 
-        rawLegende = parsed.legende;
-        termineData = parsed.termine;
+    rawLegende = parsed.legende;
+    termineData = parsed.termine;
 
-        if (termineData.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;">Keine Termine im YAML gefunden. Klicke auf "+ Neuen Termin hinzufügen".</td></tr>`;
-        } else {
-          renderTable();
-        }
-      } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 2rem;">Fehler: ${err.message}</td></tr>`;
-      }
+    if (termineData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;">Keine Termine im YAML gefunden. Klicke auf "+ Neuen Termin hinzufügen".</td></tr>`;
+    } else {
+      renderTable();
     }
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 2rem;">Fehler: ${err.message}</td></tr>`;
+  }
+}
 
     function renderTable() {
       const tbody = document.getElementById('admin-table-body');
