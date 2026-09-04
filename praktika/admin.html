@@ -306,6 +306,7 @@
       } else {
         yaml += `  - farbe: "#238636"\n    label: "Frei"\n    status: "frei"\n`;
         yaml += `  - farbe: "#da3633"\n    label: "Belegt"\n    status: "belegt"\n`;
+        yaml += `  - farbe: "#d29922"\n    label: "Vorgemerkt"\n    status: "vorgemerkt"\n`;
       }
 
       yaml += "\ntermine:\n";
@@ -340,19 +341,12 @@
       const yamlContent = generateYAML();
 
       try {
-        const shaRes = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml?t=" + Date.now());
-        if (!shaRes.ok) throw new Error("Konnte Datei-SHA nicht von GitHub abrufen.");
-
-        const shaData = await shaRes.json();
-        const currentSha = shaData.sha;
-
         const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             password: password,
-            content: yamlContent,
-            sha: currentSha
+            content: yamlContent
           })
         });
 
