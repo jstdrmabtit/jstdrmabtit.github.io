@@ -298,27 +298,36 @@ function utf8ToBase64(str) {
 }
 
 async function saveData() {
-  const token = document.getElementById('pat').value.trim();
-  if (!token) {
-    alert("Bitte gib zuerst dein GitHub Personal Access Token ein!");
+  const password = document.getElementById('pat').value.trim();
+  if (!password) {
+    alert("Bitte gib dein Admin-Passwort ein!");
     return;
   }
 
+  const yamlContent = generateYAML();
+
   try {
-    // 1. SHA der aktuellen Datei mit dem Token abrufen
-    const shaRes = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml", {
+    const res = await fetch("DEINE_CLOUDFLARE_WORKER_URL", {
+      method: "POST",
       headers: {
-        "Authorization": `Bearer ${token}`,
-        "Accept": "application/vnd.github.v3+json"
-      }
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        password: password,
+        content: yamlContent
+      })
     });
 
-    if (!shaRes.ok) {
-      if (shaRes.status === 401) {
-        throw new Error("Ungültiges Token (Bad Credentials). Bitte erstelle ein neues Personal Access Token auf GitHub.");
-      }
-      throw new Error("Fehler beim Abrufen der Datei-Info von GitHub.");
+    if (res.ok) {
+      alert("Erfolgreich gespeichert!");
+    } else {
+      const errText = await res.text();
+      alert("Fehler beim Speichern: " + errText);
     }
+  } catch (err) {
+    alert("Netzwerkfehler: " + err.message);
+  }
+}
 
     const shaData = await shaRes.json();
     const currentSha = shaData.sha;
