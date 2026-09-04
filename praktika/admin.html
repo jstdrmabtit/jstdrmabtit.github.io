@@ -215,20 +215,22 @@
     }
 
     async function loadData() {
-      try {
-        const res = await fetch("https://cdn.jsdelivr.net/gh/jstdrmabtit/jstdrmabtit.github.io@main/_data/meinedaten.yml?timestamp=" + new Date().getTime());
-        if (!res.ok) throw new Error("Datei konnte nicht geladen werden.");
-        
-        const yamlText = await res.text();
-        const parsed = parseYAML(yamlText);
-        rawLegende = parsed.legende;
-        termineData = parsed.termine;
+  try {
+    const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?t=" + new Date().getTime(), {
+      headers: { "Cache-Control": "no-cache" }
+    });
+    if (!res.ok) throw new Error("Datei konnte nicht geladen werden.");
+    
+    const yamlText = await res.text();
+    const parsed = parseYAML(yamlText);
+    rawLegende = parsed.legende;
+    termineData = parsed.termine;
 
-        renderTable();
-      } catch (err) {
-        alert("Fehler beim Laden der Daten: " + err.message);
-      }
-    }
+    renderTable();
+  } catch (err) {
+    alert("Fehler beim Laden der Daten: " + err.message);
+  }
+}
 
     function renderTable() {
       const tbody = document.getElementById('admin-table-body');
