@@ -185,18 +185,23 @@
     }
 
     async function loadFrontendData() {
-      const tbody = document.getElementById('kalender-body');
-      try {
-        const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?t=" + Date.now());
-        if (!res.ok) throw new Error("HTTP Fehler " + res.status);
+  const tbody = document.getElementById('kalender-body');
+  try {
+    const res = await fetch("https://raw.githubusercontent.com/jstdrmabtit/jstdrmabtit.github.io/main/_data/meinedaten.yml?nocache=" + Math.random().toString(36).substring(7), {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
+    if (!res.ok) throw new Error("HTTP Fehler " + res.status);
 
-        const text = await res.text();
-        const parsed = parseYAML(text);
+    const text = await res.text();
+    const parsed = parseYAML(text);
 
-        if (!parsed.termine || parsed.termine.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem;">Keine Termine vorhanden.</td></tr>`;
-          return;
-        }
+    if (!parsed.termine || parsed.termine.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem;">Keine Termine vorhanden.</td></tr>`;
+      return;
+    }
 
         tbody.innerHTML = parsed.termine.map(t => {
           const statusClass = t.status ? t.status.toLowerCase() : 'frei';
