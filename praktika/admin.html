@@ -161,12 +161,181 @@ layout: null
   </div>
 
   <script>
+   ---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Praktikumskalender Bearbeiten</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --accent: #238636;
+      --status-gruen: #238636;
+      --status-rot: #da3633;
+      --status-gelb: #9e6a03;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 950px;
+      margin: 30px auto;
+      padding: 0 20px 50px 20px;
+    }
+
+    h1 { margin-bottom: 5px; }
+    p.subtitle { color: #8b949e; margin-bottom: 25px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .auth-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input, select {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    input[type="password"] { flex-grow: 1; }
+
+    .table-container {
+      overflow-x: auto;
+      margin-top: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #21262d;
+      color: #8b949e;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+    }
+
+    .small-input {
+      width: 70px;
+    }
+
+    .date-input {
+      width: 90px;
+    }
+
+    .status-select {
+      font-weight: bold;
+      border-radius: 20px;
+      padding: 6px 12px;
+      cursor: pointer;
+      border: none;
+    }
+
+    .status-select[data-status="frei"] { background: rgba(46,164,79,0.25); color: #3fb950; border: 1px solid var(--status-gruen); }
+    .status-select[data-status="belegt"] { background: rgba(248,81,73,0.25); color: #f85149; border: 1px solid var(--status-rot); }
+    .status-select[data-status="vorgemerkt"] { background: rgba(210,153,34,0.25); color: #d29922; border: 1px solid var(--status-gelb); }
+
+    .betrieb-input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .btn-save {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 14px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 20px;
+      transition: background 0.2s;
+    }
+
+    .btn-save:hover { background: #2ea44f; }
+
+    .status-msg {
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+    .success { background: rgba(46,164,79,0.2); color: #3fb950; border: 1px solid rgba(46,164,79,0.4); }
+    .error { background: rgba(248,81,73,0.2); color: #f85149; border: 1px solid rgba(248,81,73,0.4); }
+  </style>
+</head>
+<body>
+
+  <h1>Praktikums-Verwaltung</h1>
+  <p class="subtitle">Verwalte deine Schulwochen, Daten und Praktikumstermine.</p>
+
+  <div id="statusBox" class="status-msg"></div>
+
+  <div class="card">
+    <div class="auth-group">
+      <label for="password"><strong>Admin-Passwort:</strong></label>
+      <input type="password" id="password" placeholder="Passwort eingeben...">
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Terminübersicht</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>SW</th>
+            <th>KW</th>
+            <th>Von – Bis</th>
+            <th>Status</th>
+            <th>Betrieb / Einrichtung</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="5" style="text-align:center;">Lade Daten...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <button class="btn-save" onclick="saveData()">Änderungen Speichern</button>
+  </div>
+
+  <script>
     const WORKER_URL = "https://dark-scene-3aef.dssd00598.workers.dev";
     let currentSha = "";
     let rawLegende = [];
     let termineData = [];
 
-    // Simple YAML Parser für dieses spezifische Schema
     function parseYAML(text) {
       const lines = text.split('\n');
       let inTermine = false;
@@ -177,8 +346,20 @@ layout: null
 
       lines.forEach(line => {
         const trimmed = line.trim();
-        if (trimmed.startsWith('legende:')) { inLegende = true; inTermine = false; return; }
-        if (trimmed.startsWith('termine:')) { inTermine = true; inLegende = false; return; }
+        if (!trimmed) return;
+
+        if (trimmed.startsWith('legende:')) { 
+          inLegende = true; 
+          inTermine = false; 
+          return; 
+        }
+        if (trimmed.startsWith('termine:')) { 
+          if (currentItem && inLegende) legende.push(currentItem);
+          inTermine = true; 
+          inLegende = false; 
+          currentItem = null;
+          return; 
+        }
 
         if (trimmed.startsWith('- ')) {
           if (currentItem) {
@@ -204,25 +385,28 @@ layout: null
       return { legende, termine };
     }
 
-    // Wandelt Tabellendaten zurück in sauber eingerücktes YAML um
     function generateYAML(legende, termine) {
-      let yaml = "legende:\n";
+      let yamlLines = ["legende:"];
+      
       legende.forEach(item => {
-        yaml += `  - farbe: "${item.farbe}"\n`;
-        yaml += `    label: "${item.label}"\n`;
+        yamlLines.push(`  - farbe: "${item.farbe || ''}"`);
+        yamlLines.push(`    label: "${item.label || ''}"`);
       });
 
-      yaml += "\ntermine:\n";
+      yamlLines.push("\ntermine:");
+      
       termine.forEach(item => {
-        yaml += `  - sw: "${item.sw || ''}"\n`;
-        yaml += `    kw: "${item.kw || ''}"\n`;
-        yaml += `    von: "${item.von || ''}"\n`;
-        yaml += `    bis: "${item.bis || ''}"\n`;
-        yaml += `    betrieb: "${item.betrieb || ''}"\n`;
-        yaml += `    status: "${item.status || 'frei'}"\n`;
+        if (item.sw || item.kw || item.von) {
+          yamlLines.push(`  - sw: "${item.sw || ''}"`);
+          yamlLines.push(`    kw: "${item.kw || ''}"`);
+          yamlLines.push(`    von: "${item.von || ''}"`);
+          yamlLines.push(`    bis: "${item.bis || ''}"`);
+          yamlLines.push(`    betrieb: "${item.betrieb || ''}"`);
+          yamlLines.push(`    status: "${item.status || 'frei'}"`);
+        }
       });
 
-      return yaml;
+      return yamlLines.join("\n");
     }
 
     async function loadData() {
@@ -250,8 +434,16 @@ layout: null
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
-          <td><strong>${item.sw || ''}</strong> <br><small style="color:#8b949e">${item.kw || ''}</small></td>
-          <td>${item.von || ''} – ${item.bis || ''}</td>
+          <td>
+            <input type="text" class="small-input" value="${item.sw || ''}" onchange="updateField(${index}, 'sw', this.value)">
+          </td>
+          <td>
+            <input type="text" class="small-input" value="${item.kw || ''}" onchange="updateField(${index}, 'kw', this.value)">
+          </td>
+          <td>
+            <input type="text" class="date-input" value="${item.von || ''}" onchange="updateField(${index}, 'von', this.value)"> – 
+            <input type="text" class="date-input" value="${item.bis || ''}" onchange="updateField(${index}, 'bis', this.value)">
+          </td>
           <td>
             <select class="status-select" data-status="${item.status || 'frei'}" onchange="updateStatusStyle(this, ${index})">
               <option value="frei" ${item.status === 'frei' ? 'selected' : ''}>Frei / Verfügbar</option>
@@ -260,7 +452,7 @@ layout: null
             </select>
           </td>
           <td>
-            <input type="text" class="betrieb-input" value="${item.betrieb || ''}" onchange="updateBetrieb(this.value, ${index})" placeholder="Betrieb eintragen...">
+            <input type="text" class="betrieb-input" value="${item.betrieb || ''}" onchange="updateField(${index}, 'betrieb', this.value)" placeholder="Betrieb eintragen...">
           </td>
         `;
 
@@ -268,14 +460,14 @@ layout: null
       });
     }
 
+    function updateField(index, field, value) {
+      termineData[index][field] = value;
+    }
+
     function updateStatusStyle(selectEl, index) {
       const val = selectEl.value;
       selectEl.setAttribute("data-status", val);
       termineData[index].status = val;
-    }
-
-    function updateBetrieb(val, index) {
-      termineData[index].betrieb = val;
     }
 
     async function saveData() {
@@ -321,6 +513,9 @@ layout: null
     }
 
     loadData();
+  </script>
+</body>
+</html>
   </script>
 </body>
 </html>
