@@ -272,7 +272,9 @@ layout: null
         const res = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml?timestamp=" + new Date().getTime());
         const data = await res.json();
         currentSha = data.sha;
-        const yamlText = decodeURIComponent(escape(atob(data.content)));
+        const cleanedBase64 = data.content.replace(/\s/g, '');
+        const bytes = Uint8Array.from(atob(cleanedBase64), c => c.charCodeAt(0));
+        const yamlText = new TextDecoder('utf-8').decode(bytes);
         
         const parsed = parseYAML(yamlText);
         rawLegende = parsed.legende;
