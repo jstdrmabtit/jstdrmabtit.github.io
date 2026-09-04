@@ -1,239 +1,227 @@
----
-layout: null
----
 <!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Praktikumstermine Klasse B010 - Barnabás Jóczik</title>
+  <title>Praktikumskalender - Übersicht</title>
   <style>
     :root {
       --bg: #0d1117;
-      --card-bg: #161b22;
+      --card: #161b22;
       --border: #30363d;
       --text: #c9d1d9;
-      --text-bright: #f0f6fc;
-      --accent: #58a6ff;
-      
-      --color-green: #2ea44f;
-      --color-red: #f85149;
-      --color-yellow: #d29922;
-
-      --bg-green: rgba(46, 164, 79, 0.15);
-      --bg-red: rgba(248, 81, 73, 0.15);
-      --bg-yellow: rgba(210, 153, 34, 0.15);
+      --status-frei-bg: rgba(46, 164, 79, 0.2);
+      --status-frei-text: #3fb950;
+      --status-frei-border: #238636;
+      --status-belegt-bg: rgba(248, 81, 73, 0.2);
+      --status-belegt-text: #f85149;
+      --status-belegt-border: #da3633;
+      --status-vorgemerkt-bg: rgba(210, 153, 34, 0.2);
+      --status-vorgemerkt-text: #d29922;
+      --status-vorgemerkt-border: #9e6a03;
     }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg);
+      background: var(--bg);
       color: var(--text);
-      line-height: 1.6;
-      margin: 0;
-      padding: 30px 15px;
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 0 20px 50px 20px;
     }
 
-    .container {
-      max-width: 850px;
-      margin: 0 auto;
-    }
+    h1 { margin-bottom: 5px; }
+    p.subtitle { color: #8b949e; margin-bottom: 25px; }
 
     .card {
-      background: var(--card-bg);
+      background: var(--card);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-
-    h1 {
-      font-size: 1.5rem;
-      margin-top: 0;
-      color: var(--text-bright);
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 12px;
-    }
-
-    /* Legend Component */
-    .legend-box {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      background-color: #21262d;
-      border: 1px solid var(--border);
-      padding: 12px 16px;
-      border-radius: 6px;
+      padding: 20px;
       margin-bottom: 20px;
-      align-items: center;
     }
 
-    .legend-title {
-      font-weight: 600;
-      color: var(--text-bright);
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      margin-right: 8px;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.85rem;
-    }
-
-    .color-square {
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      display: inline-block;
-    }
-
-    .sq-green { background-color: var(--color-green); }
-    .sq-red { background-color: var(--color-red); }
-    .sq-yellow { background-color: var(--color-yellow); }
-
-    /* Spreadsheet Table */
-    .sheet-wrapper {
+    .table-container {
       overflow-x: auto;
-      border: 1px solid var(--border);
-      border-radius: 6px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       text-align: left;
-      font-size: 0.9rem;
-      background-color: var(--card-bg);
     }
 
     th, td {
-      padding: 10px 14px;
+      padding: 12px;
       border-bottom: 1px solid var(--border);
-      border-right: 1px solid var(--border);
-    }
-
-    th:last-child, td:last-child {
-      border-right: none;
     }
 
     th {
-      background-color: #21262d;
-      color: var(--text-bright);
-      font-weight: 600;
-      font-size: 0.8rem;
+      background: #21262d;
+      color: #8b949e;
+      font-size: 0.85rem;
       text-transform: uppercase;
-    }
-
-    .sw-cell {
-      font-weight: bold;
-      color: var(--accent);
-      text-align: center;
-      width: 80px;
-    }
-
-    /* Row Colorings */
-    .status-frei {
-      background-color: var(--bg-green);
-    }
-
-    .status-belegt {
-      background-color: var(--bg-red);
-    }
-
-    .status-vorgemerkt {
-      background-color: var(--bg-yellow);
     }
 
     .badge {
       display: inline-block;
-      padding: 2px 8px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      border-radius: 12px;
-      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 0.85rem;
     }
 
-    .badge-frei {
-      color: var(--color-green);
-      border: 1px solid var(--color-green);
+    .badge-frei { background: var(--status-frei-bg); color: var(--status-frei-text); border: 1px solid var(--status-frei-border); }
+    .badge-belegt { background: var(--status-belegt-bg); color: var(--status-belegt-text); border: 1px solid var(--status-belegt-border); }
+    .badge-vorgemerkt { background: var(--status-vorgemerkt-bg); color: var(--status-vorgemerkt-text); border: 1px solid var(--status-vorgemerkt-border); }
+
+    .legende-container {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
     }
 
-    .badge-belegt {
-      color: var(--color-red);
-      border: 1px solid var(--color-red);
+    .legende-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
     }
 
-    .badge-vorgemerkt {
-      color: var(--color-yellow);
-      border: 1px solid var(--color-yellow);
+    .legende-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    
-    <div class="card">
-      <h1>Praktikumswochen Klasse B010</h1>
+  <h1>Praktikumskalender</h1>
+  <p class="subtitle">Aktuelle Übersicht der Schulwochen und Praktikumszeiten.</p>
 
-      <!-- Color Explanation Header -->
-      <div class="legend-box">
-        <span class="legend-title">Farblernde:</span>
-        <div class="legend-item">
-          <span class="color-square sq-green"></span>
-          <span>Frei / Verfügbar</span>
-        </div>
-        <div class="legend-item">
-          <span class="color-square sq-red"></span>
-          <span>Belegt</span>
-        </div>
-        <div class="legend-item">
-          <span class="color-square sq-yellow"></span>
-          <span>Vorgemerkt</span>
-        </div>
-      </div>
+  <div class="legende-container" id="legendeBox"></div>
 
-      <!-- Spreadsheet View -->
-      <div class="sheet-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Schulwoche</th>
-              <th>Kalenderwoche</th>
-              <th>Von</th>
-              <th>Bis</th>
-              <th>Betrieb</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for termin in site.data.meinedaten.termine %}
-            <tr class="status-{{ termin.status }}">
-              <td class="sw-cell">{{ termin.sw }}</td>
-              <td><strong>{{ termin.kw }}</strong></td>
-              <td>{{ termin.von }}</td>
-              <td>{{ termin.bis }}</td>
-              <td><strong>{{ termin.betrieb }}</strong></td>
-              <td>
-                {% if termin.status == 'frei' %}
-                  <span class="badge badge-frei">FREI</span>
-                {% elsif termin.status == 'belegt' %}
-                  <span class="badge badge-belegt">BELEGT</span>
-                {% else %}
-                  <span class="badge badge-vorgemerkt">OFFEN</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+  <div class="card">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>SW</th>
+            <th>KW</th>
+            <th>Zeitraum</th>
+            <th>Status</th>
+            <th>Betrieb / Einrichtung</th>
+          </tr>
+        </thead>
+        <tbody id="kalenderBody">
+          <tr><td colspan="5" style="text-align:center;">Lade aktuelle Daten...</td></tr>
+        </tbody>
+      </table>
     </div>
-
   </div>
 
+  <script>
+    function parseYAML(text) {
+      const lines = text.split('\n');
+      let inTermine = false;
+      let inLegende = false;
+      let termine = [];
+      let legende = [];
+      let currentItem = null;
+
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        if (trimmed.startsWith('legende:')) { 
+          inLegende = true; 
+          inTermine = false; 
+          return; 
+        }
+        if (trimmed.startsWith('termine:')) { 
+          if (currentItem && inLegende) legende.push(currentItem);
+          inTermine = true; 
+          inLegende = false; 
+          currentItem = null;
+          return; 
+        }
+
+        if (trimmed.startsWith('- ')) {
+          if (currentItem) {
+            if (inLegende) legende.push(currentItem);
+            if (inTermine) termine.push(currentItem);
+          }
+          currentItem = {};
+        }
+
+        if (currentItem && trimmed.includes(':')) {
+          const parts = trimmed.replace(/^- /, '').split(':');
+          const key = parts[0].trim();
+          let val = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+          currentItem[key] = val;
+        }
+      });
+
+      if (currentItem) {
+        if (inLegende) legende.push(currentItem);
+        if (inTermine) termine.push(currentItem);
+      }
+
+      return { legende, termine };
+    }
+
+    async function loadLiveData() {
+      try {
+        // Echtzeit-Abruf über GitHub API mit Cache-Busting (timestamp)
+        const res = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml?timestamp=" + new Date().getTime());
+        const data = await res.json();
+        const yamlText = decodeURIComponent(escape(atob(data.content)));
+        
+        const parsed = parseYAML(yamlText);
+        renderPage(parsed.legende, parsed.termine);
+      } catch (err) {
+        document.getElementById("kalenderBody").innerHTML = `<tr><td colspan="5" style="color: red; text-align: center;">Fehler beim Laden der Daten: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderPage(legende, termine) {
+      // Legende rendern
+      const legendeBox = document.getElementById("legendeBox");
+      legendeBox.innerHTML = "";
+      legende.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "legende-item";
+        div.innerHTML = `<span class="legende-dot" style="background-color: ${item.farbe}"></span> ${item.label}`;
+        legendeBox.appendChild(div);
+      });
+
+      // Tabelle rendern
+      const tbody = document.getElementById("kalenderBody");
+      tbody.innerHTML = "";
+
+      termine.forEach(item => {
+        const tr = document.createElement("tr");
+
+        let statusBadge = "";
+        if (item.status === "frei") statusBadge = '<span class="badge badge-frei">Frei / Verfügbar</span>';
+        else if (item.status === "belegt") statusBadge = '<span class="badge badge-belegt">Belegt</span>';
+        else if (item.status === "vorgemerkt") statusBadge = '<span class="badge badge-vorgemerkt">Vorgemerkt</span>';
+
+        tr.innerHTML = `
+          <td><strong>${item.sw || ''}</strong></td>
+          <td>${item.kw || ''}</td>
+          <td>${item.von || ''} – ${item.bis || ''}</td>
+          <td>${statusBadge}</td>
+          <td>${item.betrieb || '—'}</td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    loadLiveData();
+  </script>
 </body>
 </html>
