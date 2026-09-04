@@ -174,11 +174,13 @@
     return { legende, termine };
   }
 
- async function loadLiveData() {
+async function loadLiveData() {
   try {
     const res = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml?timestamp=" + new Date().getTime());
     const data = await res.json();
     
+    if (!res.ok || !data.content) return;
+
     if (data.sha !== lastSha) {
       lastSha = data.sha;
       
