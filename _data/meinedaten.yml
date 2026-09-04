@@ -32,7 +32,7 @@ termine:
     von: "07.12.2026"
     bis: "11.12.2026"
     betrieb: "Mehrere"
-    status: "frei"
+    status: "vorgemerkt"
   - sw: "SW 6"
     kw: "KW 52"
     von: "21.12.2026"
