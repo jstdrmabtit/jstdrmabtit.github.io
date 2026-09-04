@@ -123,72 +123,79 @@
   </div>
 
   <script>
-    function parseYAML(text) {
-      const lines = text.split('\n');
-      let inTermine = false;
-      let inLegende = false;
-      let termine = [];
-      let legende = [];
-      let currentItem = null;
+  let lastSha = ""; // Speichert den aktuellen Stand der Datei
 
-      lines.forEach(line => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
+  function parseYAML(text) {
+    const lines = text.split('\n');
+    let inTermine = false;
+    let inLegende = false;
+    let termine = [];
+    let legende = [];
+    let currentItem = null;
 
-        if (trimmed.startsWith('legende:')) { 
-          inLegende = true; 
-          inTermine = false; 
-          return; 
-        }
-        if (trimmed.startsWith('termine:')) { 
-          if (currentItem && inLegende) legende.push(currentItem);
-          inTermine = true; 
-          inLegende = false; 
-          currentItem = null;
-          return; 
-        }
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
 
-        if (trimmed.startsWith('- ')) {
-          if (currentItem) {
-            if (inLegende) legende.push(currentItem);
-            if (inTermine) termine.push(currentItem);
-          }
-          currentItem = {};
-        }
-
-        if (currentItem && trimmed.includes(':')) {
-          const parts = trimmed.replace(/^- /, '').split(':');
-          const key = parts[0].trim();
-          let val = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
-          currentItem[key] = val;
-        }
-      });
-
-      if (currentItem) {
-        if (inLegende) legende.push(currentItem);
-        if (inTermine) termine.push(currentItem);
+      if (trimmed.startsWith('legende:')) { 
+        inLegende = true; 
+        inTermine = false; 
+        return; 
+      }
+      if (trimmed.startsWith('termine:')) { 
+        if (currentItem && inLegende) legende.push(currentItem);
+        inTermine = true; 
+        inLegende = false; 
+        currentItem = null;
+        return; 
       }
 
-      return { legende, termine };
+      if (trimmed.startsWith('- ')) {
+        if (currentItem) {
+          if (inLegende) legende.push(currentItem);
+          if (inTermine) termine.push(currentItem);
+        }
+        currentItem = {};
+      }
+
+      if (currentItem && trimmed.includes(':')) {
+        const parts = trimmed.replace(/^- /, '').split(':');
+        const key = parts[0].trim();
+        let val = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+        currentItem[key] = val;
+      }
+    });
+
+    if (currentItem) {
+      if (inLegende) legende.push(currentItem);
+      if (inTermine) termine.push(currentItem);
     }
 
-    async function loadLiveData() {
-      try {
-        // Echtzeit-Abruf über GitHub API mit Cache-Busting (timestamp)
-        const res = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml?timestamp=" + new Date().getTime());
-        const data = await res.json();
+    return { legende, termine };
+  }
+
+  async function loadLiveData() {
+    try {
+      // GitHub API mit Timestamp abfragen, um Cache zu umgehen
+      const res = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml?timestamp=" + new Date().getTime());
+      const data = await res.json();
+      
+      // Prüfen, ob sich die Datei seit dem letzten Prüfen überhaupt verändert hat
+      if (data.sha !== lastSha) {
+        lastSha = data.sha; // Neuen Status merken
         const yamlText = decodeURIComponent(escape(atob(data.content)));
-        
         const parsed = parseYAML(yamlText);
         renderPage(parsed.legende, parsed.termine);
-      } catch (err) {
-        document.getElementById("kalenderBody").innerHTML = `<tr><td colspan="5" style="color: red; text-align: center;">Fehler beim Laden der Daten: ${err.message}</td></tr>`;
       }
+    } catch (err) {
+      console.error("Fehler beim automatischen Aktualisieren:", err);
     }
+  }
 
-    function renderPage(legende, termine) {
-      // Legende rendern
-      const legendeBox = document.getElementById("legendeBox");
+  function renderPage(legende, termine) {
+    // Legende rendern
+    const legendeBox = document.getElementById("legendeBox");
+    if (legendeBox) {
       legendeBox.innerHTML = "";
       legende.forEach(item => {
         const div = document.createElement("div");
@@ -196,32 +203,37 @@
         div.innerHTML = `<span class="legende-dot" style="background-color: ${item.farbe}"></span> ${item.label}`;
         legendeBox.appendChild(div);
       });
-
-      // Tabelle rendern
-      const tbody = document.getElementById("kalenderBody");
-      tbody.innerHTML = "";
-
-      termine.forEach(item => {
-        const tr = document.createElement("tr");
-
-        let statusBadge = "";
-        if (item.status === "frei") statusBadge = '<span class="badge badge-frei">Frei / Verfügbar</span>';
-        else if (item.status === "belegt") statusBadge = '<span class="badge badge-belegt">Belegt</span>';
-        else if (item.status === "vorgemerkt") statusBadge = '<span class="badge badge-vorgemerkt">Vorgemerkt</span>';
-
-        tr.innerHTML = `
-          <td><strong>${item.sw || ''}</strong></td>
-          <td>${item.kw || ''}</td>
-          <td>${item.von || ''} – ${item.bis || ''}</td>
-          <td>${statusBadge}</td>
-          <td>${item.betrieb || '—'}</td>
-        `;
-
-        tbody.appendChild(tr);
-      });
     }
 
-    loadLiveData();
-  </script>
+    // Tabelle rendern
+    const tbody = document.getElementById("kalenderBody");
+    tbody.innerHTML = "";
+
+    termine.forEach(item => {
+      const tr = document.createElement("tr");
+
+      let statusBadge = "";
+      if (item.status === "frei") statusBadge = '<span class="badge badge-frei">Frei / Verfügbar</span>';
+      else if (item.status === "belegt") statusBadge = '<span class="badge badge-belegt">Belegt</span>';
+      else if (item.status === "vorgemerkt") statusBadge = '<span class="badge badge-vorgemerkt">Vorgemerkt</span>';
+
+      tr.innerHTML = `
+        <td><strong>${item.sw || ''}</strong></td>
+        <td>${item.kw || ''}</td>
+        <td>${item.von || ''} – ${item.bis || ''}</td>
+        <td>${statusBadge}</td>
+        <td>${item.betrieb || '—'}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Erster Aufruf beim Laden der Seite
+  loadLiveData();
+
+  // Automatische Aktualisierung alle 5 Sekunden (5000ms)
+  setInterval(loadLiveData, 5000);
+</script>
 </body>
 </html>
