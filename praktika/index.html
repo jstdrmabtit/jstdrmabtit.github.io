@@ -7,41 +7,66 @@
   <style>
     :root {
       --bg: #0d1117;
-      --card: #161b22;
+      --card-bg: #161b22;
       --border: #30363d;
       --text: #c9d1d9;
-      --status-frei-bg: rgba(46, 164, 79, 0.2);
-      --status-frei-text: #3fb950;
-      --status-frei-border: #238636;
-      --status-belegt-bg: rgba(248, 81, 73, 0.2);
-      --status-belegt-text: #f85149;
-      --status-belegt-border: #da3633;
-      --status-vorgemerkt-bg: rgba(210, 153, 34, 0.2);
-      --status-vorgemerkt-text: #d29922;
-      --status-vorgemerkt-border: #9e6a03;
+      --heading: #f0f6fc;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
       color: var(--text);
-      max-width: 1000px;
-      margin: 30px auto;
-      padding: 0 20px 50px 20px;
+      margin: 0;
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
     }
 
-    h1 { margin-bottom: 5px; }
-    p.subtitle { color: #8b949e; margin-bottom: 25px; }
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
 
-    .card {
-      background: var(--card);
+    h1 {
+      color: var(--heading);
+      margin-bottom: 0.5rem;
+    }
+
+    p.subtitle {
+      color: #8b949e;
+      margin-bottom: 2rem;
+    }
+
+    .legend-container {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      background: var(--card-bg);
+      padding: 1rem;
+      border-radius: 6px;
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
     }
 
     .table-container {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
       overflow-x: auto;
     }
 
@@ -52,58 +77,46 @@
     }
 
     th, td {
-      padding: 12px;
+      padding: 0.75rem 1rem;
       border-bottom: 1px solid var(--border);
     }
 
     th {
-      background: #21262d;
-      color: #8b949e;
+      background-color: #21262d;
+      color: var(--heading);
+      font-weight: 600;
       font-size: 0.85rem;
       text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
     }
 
     .badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-weight: bold;
-      font-size: 0.85rem;
-    }
-
-    .badge-frei { background: var(--status-frei-bg); color: var(--status-frei-text); border: 1px solid var(--status-frei-border); }
-    .badge-belegt { background: var(--status-belegt-bg); color: var(--status-belegt-text); border: 1px solid var(--status-belegt-border); }
-    .badge-vorgemerkt { background: var(--status-vorgemerkt-bg); color: var(--status-vorgemerkt-text); border: 1px solid var(--status-vorgemerkt-border); }
-
-    .legende-container {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-
-    .legende-item {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
-      font-size: 0.9rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: capitalize;
     }
 
-    .legende-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
+    .status-frei { background-color: rgba(35, 134, 54, 0.2); color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.3); }
+    .status-belegt { background-color: rgba(218, 54, 51, 0.2); color: #f85149; border: 1px solid rgba(248, 81, 73, 0.3); }
+    .status-vorgemerkt { background-color: rgba(158, 106, 3, 0.2); color: #d29922; border: 1px solid rgba(210, 153, 34, 0.3); }
   </style>
 </head>
 <body>
 
-  <h1>Praktikumskalender</h1>
-  <p class="subtitle">Aktuelle Übersicht der Schulwochen und Praktikumszeiten.</p>
+  <div class="container">
+    <h1>Praktikumskalender</h1>
+    <p class="subtitle">Aktuelle Übersicht der Schulwochen und Praktikumszeiten.</p>
 
-  <div class="legende-container" id="legendeBox"></div>
+    <div class="legend-container" id="legend"></div>
 
-  <div class="card">
     <div class="table-container">
       <table>
         <thead>
@@ -115,129 +128,107 @@
             <th>Betrieb / Einrichtung</th>
           </tr>
         </thead>
-        <tbody id="kalenderBody">
-          <tr><td colspan="5" style="text-align:center;">Lade aktuelle Daten...</td></tr>
+        <tbody id="calendar-body">
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 2rem;">Lade aktuelle Daten...</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <script>
-  let lastSha = ""; // Speichert den aktuellen Stand der Datei
+    function parseYAML(yamlString) {
+      const lines = yamlString.split('\n');
+      let legende = [];
+      let termine = [];
+      let currentSection = null;
+      let currentItem = null;
 
-  function parseYAML(text) {
-    const lines = text.split('\n');
-    let inTermine = false;
-    let inLegende = false;
-    let termine = [];
-    let legende = [];
-    let currentItem = null;
+      for (let line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
 
-    lines.forEach(line => {
-      const trimmed = line.trim();
-      if (!trimmed) return;
-
-      if (trimmed.startsWith('legende:')) { 
-        inLegende = true; 
-        inTermine = false; 
-        return; 
-      }
-      if (trimmed.startsWith('termine:')) { 
-        if (currentItem && inLegende) legende.push(currentItem);
-        inTermine = true; 
-        inLegende = false; 
-        currentItem = null;
-        return; 
-      }
-
-      if (trimmed.startsWith('- ')) {
-        if (currentItem) {
-          if (inLegende) legende.push(currentItem);
-          if (inTermine) termine.push(currentItem);
+        if (trimmed === 'legende:') {
+          currentSection = 'legende';
+          continue;
+        } else if (trimmed === 'termine:') {
+          if (currentItem && currentSection === 'legende') legende.push(currentItem);
+          currentSection = 'termine';
+          currentItem = null;
+          continue;
         }
-        currentItem = {};
+
+        if (trimmed.startsWith('- ')) {
+          if (currentItem) {
+            if (currentSection === 'legende') legende.push(currentItem);
+            if (currentSection === 'termine') termine.push(currentItem);
+          }
+          currentItem = {};
+          const firstProp = trimmed.substring(2).split(':');
+          if (firstProp.length >= 2) {
+            const key = firstProp[0].trim();
+            const val = firstProp.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+            currentItem[key] = val;
+          }
+        } else if (currentItem && trimmed.includes(':')) {
+          const parts = trimmed.split(':');
+          const key = parts[0].trim();
+          const val = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
+          currentItem[key] = val;
+        }
       }
 
-      if (currentItem && trimmed.includes(':')) {
-        const parts = trimmed.replace(/^- /, '').split(':');
-        const key = parts[0].trim();
-        let val = parts.slice(1).join(':').trim().replace(/^["']|["']$/g, '');
-        currentItem[key] = val;
+      if (currentItem) {
+        if (currentSection === 'legende') legende.push(currentItem);
+        if (currentSection === 'termine') termine.push(currentItem);
       }
-    });
 
-    if (currentItem) {
-      if (inLegende) legende.push(currentItem);
-      if (inTermine) termine.push(currentItem);
+      return { legende, termine };
     }
 
-    return { legende, termine };
-  }
+    function renderPage(legende, termine) {
+      const legendContainer = document.getElementById('legend');
+      legendContainer.innerHTML = legende.map(item => `
+        <div class="legend-item">
+          <span class="dot" style="background-color: ${item.farbe};"></span>
+          <span>${item.label}</span>
+        </div>
+      `).join('');
 
-async function loadLiveData() {
-  try {
-    const res = await fetch("https://api.github.com/repos/jstdrmabtit/jstdrmabtit.github.io/contents/_data/meinedaten.yml?timestamp=" + new Date().getTime());
-    const data = await res.json();
-    
-    if (!res.ok || !data.content) return;
-
-    if (data.sha !== lastSha) {
-      lastSha = data.sha;
-      
-      const cleanedBase64 = data.content.replace(/\s/g, '');
-      const bytes = Uint8Array.from(atob(cleanedBase64), c => c.charCodeAt(0));
-      const yamlText = new TextDecoder('utf-8').decode(bytes);
-
-      const parsed = parseYAML(yamlText);
-      renderPage(parsed.legende, parsed.termine);
-    }
-  } catch (err) {
-    console.error("Fehler beim automatischen Aktualisieren:", err);
-  }
-}
-
-  function renderPage(legende, termine) {
-    // Legende rendern
-    const legendeBox = document.getElementById("legendeBox");
-    if (legendeBox) {
-      legendeBox.innerHTML = "";
-      legende.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "legende-item";
-        div.innerHTML = `<span class="legende-dot" style="background-color: ${item.farbe}"></span> ${item.label}`;
-        legendeBox.appendChild(div);
-      });
+      const tbody = document.getElementById('calendar-body');
+      tbody.innerHTML = termine.map(t => `
+        <tr>
+          <td><strong>${t.sw}</strong></td>
+          <td>${t.kw}</td>
+          <td>${t.von} - ${t.bis}</td>
+          <td><span class="badge status-${t.status}">${t.status}</span></td>
+          <td>${t.betrieb || '-'}</td>
+        </tr>
+      `).join('');
     }
 
-    // Tabelle rendern
-    const tbody = document.getElementById("kalenderBody");
-    tbody.innerHTML = "";
+    let lastText = "";
 
-    termine.forEach(item => {
-      const tr = document.createElement("tr");
+    async function loadLiveData() {
+      try {
+        const res = await fetch("https://cdn.jsdelivr.net/gh/jstdrmabtit/jstdrmabtit.github.io@main/_data/meinedaten.yml?timestamp=" + new Date().getTime());
+        if (!res.ok) return;
 
-      let statusBadge = "";
-      if (item.status === "frei") statusBadge = '<span class="badge badge-frei">Frei / Verfügbar</span>';
-      else if (item.status === "belegt") statusBadge = '<span class="badge badge-belegt">Belegt</span>';
-      else if (item.status === "vorgemerkt") statusBadge = '<span class="badge badge-vorgemerkt">Vorgemerkt</span>';
+        const yamlText = await res.text();
+        
+        if (yamlText !== lastText) {
+          lastText = yamlText;
+          const parsed = parseYAML(yamlText);
+          renderPage(parsed.legende, parsed.termine);
+        }
+      } catch (err) {
+        console.error("Fehler beim automatischen Aktualisieren:", err);
+      }
+    }
 
-      tr.innerHTML = `
-        <td><strong>${item.sw || ''}</strong></td>
-        <td>${item.kw || ''}</td>
-        <td>${item.von || ''} – ${item.bis || ''}</td>
-        <td>${statusBadge}</td>
-        <td>${item.betrieb || '—'}</td>
-      `;
-
-      tbody.appendChild(tr);
-    });
-  }
-
-  // Erster Aufruf beim Laden der Seite
-  loadLiveData();
-
-  // Automatische Aktualisierung alle 5 Sekunden (5000ms)
-  setInterval(loadLiveData, 5000);
-</script>
+    loadLiveData();
+    setInterval(loadLiveData, 10000);
+  </script>
 </body>
 </html>
