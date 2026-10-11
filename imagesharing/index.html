@@ -1,22 +1,67 @@
-<!-- Download-Bereich -->
-<div style="background: #1e1e1e; color: #fff; padding: 20px; border-radius: 8px; font-family: sans-serif; max-width: 400px;">
-  <h3>Archiv herunterladen</h3>
-  <p style="font-size: 14px; color: #aaa;">Gib den Dateinamen und dein Admin-Passwort ein.</p>
+<!-- Video Player & TAR Extractor Bereich -->
+<div style="background: #1e1e1e; color: #fff; padding: 20px; border-radius: 8px; font-family: sans-serif; max-width: 600px;">
+  <h3>🎬 TAR-Archiv laden & im Browser abspielen</h3>
+  <p style="font-size: 14px; color: #aaa;">Das `.tar`-Archiv wird geladen, im Browser entpackt und direkt abgespielt.</p>
   
-  <input type="text" id="fileNameInput" value="MelinaTheoTown_Final.tar" placeholder="Dateiname (z.B. archive.tar)" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px;">
+  <input type="text" id="fileNameInput" value="MelinaTheoTown_Final.tar" placeholder="Archiv-Dateiname" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px;">
   
   <input type="password" id="workerPassword" placeholder="Admin Passwort" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px;">
   
-  <button onclick="startClientDownload()" style="width: 100%; padding: 10px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Download starten</button>
+  <button onclick="startExtractionAndPlayback()" style="width: 100%; padding: 10px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Laden, Entpacken & Abspielen</button>
   
   <p id="statusMessage" style="margin-top: 10px; font-size: 13px; color: #ccc;"></p>
+
+  <!-- HTML5 Video Player -->
+  <video id="videoPlayer" controls style="width: 100%; margin-top: 15px; display: none; border-radius: 6px; background: #000;"></video>
 </div>
 
 <script>
-async function startClientDownload() {
+// Hilfsfunktion zum Entpacken der ersten MP4-Datei aus einem TAR-Blob
+async function extractMp4FromTar(tarBlob) {
+  const buffer = await tarBlob.arrayBuffer();
+  const view = new Uint8Array(buffer);
+  let offset = 0;
+  
+  while (offset < view.length) {
+    const header = view.subarray(offset, offset + 512);
+    if (header[0] === 0) break; // Ende des Archivs erreicht
+    
+    // Dateinamen aus dem TAR-Header lesen (erste 100 Bytes)
+    let name = "";
+    for (let i = 0; i < 100; i++) {
+      if (header[i] === 0) break;
+      name += String.fromCharCode(header[i]);
+    }
+    
+    // Dateigröße im Oktalformat auslesen (Bytes 124-136)
+    let sizeStr = "";
+    for (let i = 124; i < 136; i++) {
+      if (header[i] === 0 || header[i] === 32) continue;
+      sizeStr += String.fromCharCode(header[i]);
+    }
+    const size = parseInt(sizeStr, 8);
+    
+    offset += 512; // Überspringe den Header-Block
+    
+    // Prüfen, ob es die gesuchte Videodatei ist
+    if (name.toLowerCase().endsWith('.mp4') || size > 0) {
+      const fileData = view.subarray(offset, offset + size);
+      return new Blob([fileData], { type: 'video/mp4' });
+    }
+    
+    // Zum nächsten Block springen (auf 512 Bytes gerundet)
+    const paddedSize = Math.ceil(size / 512) * 512;
+    offset += paddedSize;
+  }
+  
+  throw new Error("Keine gültige Videodatei im TAR-Archiv gefunden!");
+}
+
+async function startExtractionAndPlayback() {
   const password = document.getElementById('workerPassword').value;
   const filename = document.getElementById('fileNameInput').value.trim();
   const statusEl = document.getElementById('statusMessage');
+  const videoEl = document.getElementById('videoPlayer');
   
   if (!password || !filename) {
     statusEl.textContent = "❌ Bitte Passwort und Dateiname eingeben!";
@@ -26,9 +71,10 @@ async function startClientDownload() {
 
   statusEl.textContent = "⏳ Hole Download-Links vom Worker...";
   statusEl.style.color = "#ccc";
+  videoEl.style.display = "none";
 
   try {
-    // 1. URLs vom Worker anfordern (dynamischer Dateiname)
+    // 1. URLs vom Worker anfordern
     const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -50,7 +96,7 @@ async function startClientDownload() {
     const chunks = [];
     const total = data.urls.length;
 
-    // 2. Alle Teile nacheinander herunterladen
+    // 2. Alle 24 Chunks nacheinander herunterladen
     for (let i = 0; i < total; i++) {
       statusEl.textContent = `📥 Lade Teil ${i + 1} von ${total}...`;
       
@@ -63,20 +109,21 @@ async function startClientDownload() {
       chunks.push(blob);
     }
 
-    statusEl.textContent = "📦 Setze Archiv zusammen...";
-    
-    // 3. Im Browser zusammenfügen
-    const finalBlob = new Blob(chunks, { type: "application/octet-stream" });
-    
-    // 4. Download auslösen
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(finalBlob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    statusEl.textContent = "📦 Setze TAR-Archiv zusammen...";
+    const tarBlob = new Blob(chunks, { type: "application/octet-stream" });
 
-    statusEl.textContent = `✅ Erfolgreich heruntergeladen! (${(finalBlob.size / (1024 * 1024)).toFixed(1)} MB)`;
+    statusEl.textContent = "📂 Entpacke Video aus TAR...";
+    // 3. TAR im Browser entpacken und MP4 extrahieren
+    const videoBlob = await extractMp4FromTar(tarBlob);
+
+    statusEl.textContent = "🎬 Bereite Player vor...";
+    
+    // 4. An den Videoplayer übergeben
+    videoEl.src = URL.createObjectURL(videoBlob);
+    videoEl.style.display = "block";
+    videoEl.load();
+    
+    statusEl.textContent = `✅ Erfolgreich entpackt & bereit! (${(videoBlob.size / (1024 * 1024)).toFixed(1)} MB)`;
     statusEl.style.color = "#51cf66";
 
   } catch (err) {
