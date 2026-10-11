@@ -2,129 +2,79 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Video Loader</title>
+  <title>Video Index</title>
+  <style>
+    body { background: #121212; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .box { background: #1e1e1e; padding: 25px; border-radius: 8px; width: 100%; max-width: 500px; box-sizing: border-box; }
+    input, button { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px; }
+    button { background: #007acc; border: none; font-weight: bold; cursor: pointer; }
+    button:hover { background: #005999; }
+    ul { list-style: none; padding: 0; }
+    li { margin-bottom: 8px; }
+    li a { color: #4dabf7; text-decoration: none; display: block; padding: 8px; background: #252525; border-radius: 4px; }
+    li a:hover { background: #333; }
+  </style>
 </head>
-  
-<style>
-  body { 
-    background: #121212; 
-    color: #fff; 
-    font-family: sans-serif; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    height: 100vh; 
-    margin: 0; 
-  }
-</style>
-  
-  <div style="background: #1e1e1e; padding: 20px; border-radius: 8px; width: 100%; max-width: 500px;">
-    <h3>🎬 Archiv laden & abspielen</h3>
-    
-    <input type="text" id="fileNameInput" value="MelinaTheoTown_Final.tar" placeholder="Archiv-Dateiname" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px;">
-    
-    <input type="password" id="workerPassword" placeholder="Admin Passwort" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px;">
-    
-    <button onclick="startExtractionAndPlayback()" style="width: 100%; padding: 10px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Abspielen</button>
-    
-    <p id="statusMessage" style="margin-top: 10px; font-size: 13px; color: #ccc;"></p>
+<body>
 
-    <video id="videoPlayer" controls style="width: 100%; margin-top: 15px; display: none; border-radius: 6px; background: #000;"></video>
+  <div class="box">
+    <h3>📂 Video Index</h3>
+    <p style="font-size: 13px; color: #aaa;">Gib dein Passwort ein, um die verfügbaren Videos zu laden:</p>
+    
+    <input type="password" id="workerPassword" placeholder="Admin Passwort">
+    <button onclick="loadVideoList()">Videos anzeigen</button>
+    
+    <p id="statusMessage" style="font-size: 13px; color: #ccc;"></p>
+    
+    <!-- Hier landet später die automatische Liste -->
+    <ul id="videoList"></ul>
   </div>
 
   <script>
-    async function extractMp4FromTar(tarBlob) {
-      const buffer = await tarBlob.arrayBuffer();
-      const view = new Uint8Array(buffer);
-      let offset = 0;
-      
-      while (offset < view.length) {
-        const header = view.subarray(offset, offset + 512);
-        if (header[0] === 0) break;
-        
-        let name = "";
-        for (let i = 0; i < 100; i++) {
-          if (header[i] === 0) break;
-          name += String.fromCharCode(header[i]);
-        }
-        
-        let sizeStr = "";
-        for (let i = 124; i < 136; i++) {
-          if (header[i] === 0 || header[i] === 32) continue;
-          sizeStr += String.fromCharCode(header[i]);
-        }
-        const size = parseInt(sizeStr, 8);
-        
-        offset += 512;
-        
-        if (name.toLowerCase().endsWith('.mp4') || size > 0) {
-          const fileData = view.subarray(offset, offset + size);
-          return new Blob([fileData], { type: 'video/mp4' });
-        }
-        
-        const paddedSize = Math.ceil(size / 512) * 512;
-        offset += paddedSize;
-      }
-      
-      throw new Error("Keine gültige Videodatei im TAR-Archiv gefunden!");
-    }
-
-    async function startExtractionAndPlayback() {
+    async function loadVideoList() {
       const password = document.getElementById('workerPassword').value;
-      const filename = document.getElementById('fileNameInput').value.trim();
       const statusEl = document.getElementById('statusMessage');
-      const videoEl = document.getElementById('videoPlayer');
+      const listEl = document.getElementById('videoList');
       
-      if (!password || !filename) {
-        statusEl.textContent = "❌ Bitte Passwort und Dateiname eingeben!";
+      if (!password) {
+        statusEl.textContent = "❌ Bitte Passwort eingeben!";
         statusEl.style.color = "#ff6b6b";
         return;
       }
 
-      statusEl.textContent = "⏳ Starte Download (Teil für Teil)...";
+      statusEl.textContent = "⏳ Lade Video-Liste...";
       statusEl.style.color = "#ccc";
-      videoEl.style.display = "none";
+      listEl.innerHTML = "";
 
       try {
-        const chunks = [];
-        const totalParts = 24;
+        const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: password, action: "listVideos" })
+        });
 
-        for (let i = 1; i <= totalParts; i++) {
-          statusEl.textContent = `📥 Lade Teil ${i} von ${totalParts}...`;
-          
-          const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              password: password,
-              action: "getChunk",
-              filename: filename,
-              partNumber: i
-            })
-          });
-
-          if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.message || `Fehler bei Teil ${i} (Status ${res.status})`);
-          }
-          
-          const blob = await res.blob();
-          chunks.push(blob);
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.message);
         }
 
-        statusEl.textContent = "📦 Setze TAR-Archiv zusammen...";
-        const tarBlob = new Blob(chunks, { type: "application/octet-stream" });
+        if (data.videos.length === 0) {
+          statusEl.textContent = "📭 Keine Videos gefunden.";
+          return;
+        }
 
-        statusEl.textContent = "📂 Entpacke Video aus TAR...";
-        const videoBlob = await extractMp4FromTar(tarBlob);
-
-        statusEl.textContent = "🎬 Bereite Player vor...";
-        videoEl.src = URL.createObjectURL(videoBlob);
-        videoEl.style.display = "block";
-        videoEl.load();
-        
-        statusEl.textContent = `✅ Erfolgreich entpackt & bereit! (${(videoBlob.size / (1024 * 1024)).toFixed(1)} MB)`;
+        statusEl.textContent = `✅ ${data.videos.length} Video(s) gefunden:`;
         statusEl.style.color = "#51cf66";
+
+        // Automatisch für jedes gefundene Video einen Listeneintrag generieren
+        data.videos.forEach(videoName => {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = `player.html?file=${encodeURIComponent(videoName)}`; // Verlinkt auf deine Player-Seite
+          a.textContent = `🎬 ${videoName}`;
+          li.appendChild(a);
+          listEl.appendChild(li);
+        });
 
       } catch (err) {
         statusEl.textContent = "❌ Fehler: " + err.message;
