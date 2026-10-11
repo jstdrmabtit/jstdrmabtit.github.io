@@ -1,22 +1,5 @@
-<!-- Video Player & TAR Extractor Bereich -->
-<div style="background: #1e1e1e; color: #fff; padding: 20px; border-radius: 8px; font-family: sans-serif; max-width: 600px;">
-  <h3>🎬 TAR-Archiv laden & im Browser abspielen</h3>
-  <p style="font-size: 14px; color: #aaa;">Das `.tar`-Archiv wird geladen, im Browser entpackt und direkt abgespielt.</p>
-  
-  <input type="text" id="fileNameInput" value="MelinaTheoTown_Final.tar" placeholder="Archiv-Dateiname" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px;">
-  
-  <input type="password" id="workerPassword" placeholder="Admin Passwort" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px;">
-  
-  <button onclick="startExtractionAndPlayback()" style="width: 100%; padding: 10px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Laden, Entpacken & Abspielen</button>
-  
-  <p id="statusMessage" style="margin-top: 10px; font-size: 13px; color: #ccc;"></p>
-
-  <!-- HTML5 Video Player -->
-  <video id="videoPlayer" controls style="width: 100%; margin-top: 15px; display: none; border-radius: 6px; background: #000;"></video>
-</div>
-
 <script>
-// Hilfsfunktion zum Entpacken der ersten MP4-Datei aus einem TAR-Blob
+// Hilfsfunktion zum Entpacken der ersten MP4-Datei aus dem TAR-Blob
 async function extractMp4FromTar(tarBlob) {
   const buffer = await tarBlob.arrayBuffer();
   const view = new Uint8Array(buffer);
@@ -24,16 +7,14 @@ async function extractMp4FromTar(tarBlob) {
   
   while (offset < view.length) {
     const header = view.subarray(offset, offset + 512);
-    if (header[0] === 0) break; // Ende des Archivs erreicht
+    if (header[0] === 0) break;
     
-    // Dateinamen aus dem TAR-Header lesen (erste 100 Bytes)
     let name = "";
     for (let i = 0; i < 100; i++) {
       if (header[i] === 0) break;
       name += String.fromCharCode(header[i]);
     }
     
-    // Dateigröße im Oktalformat auslesen (Bytes 124-136)
     let sizeStr = "";
     for (let i = 124; i < 136; i++) {
       if (header[i] === 0 || header[i] === 32) continue;
@@ -41,15 +22,13 @@ async function extractMp4FromTar(tarBlob) {
     }
     const size = parseInt(sizeStr, 8);
     
-    offset += 512; // Überspringe den Header-Block
+    offset += 512;
     
-    // Prüfen, ob es die gesuchte Videodatei ist
     if (name.toLowerCase().endsWith('.mp4') || size > 0) {
       const fileData = view.subarray(offset, offset + size);
       return new Blob([fileData], { type: 'video/mp4' });
     }
     
-    // Zum nächsten Block springen (auf 512 Bytes gerundet)
     const paddedSize = Math.ceil(size / 512) * 512;
     offset += paddedSize;
   }
@@ -69,43 +48,35 @@ async function startExtractionAndPlayback() {
     return;
   }
 
-  statusEl.textContent = "⏳ Hole Download-Links vom Worker...";
+  statusEl.textContent = "⏳ Starte Download (Teil für Teil)...";
   statusEl.style.color = "#ccc";
   videoEl.style.display = "none";
 
   try {
-    // 1. URLs vom Worker anfordern
-    const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        password: password,
-        action: "getUrls",
-        filename: filename,
-        totalParts: 24
-      })
-    });
-
-    const data = await res.json();
-    if (!data.success) {
-      statusEl.textContent = "❌ Fehler: " + data.message;
-      statusEl.style.color = "#ff6b6b";
-      return;
-    }
-
     const chunks = [];
-    const total = data.urls.length;
+    const totalParts = 24;
 
-    // 2. Alle 24 Chunks nacheinander herunterladen
-    for (let i = 0; i < total; i++) {
-      statusEl.textContent = `📥 Lade Teil ${i + 1} von ${total}...`;
+    // Fordert jeden Teil einzeln frisch beim Worker an (keine ablaufenden Tokens!)
+    for (let i = 1; i <= totalParts; i++) {
+      statusEl.textContent = `📥 Lade Teil ${i} von ${totalParts}...`;
       
-      const chunkRes = await fetch(data.urls[i]);
-      if (!chunkRes.ok) {
-        throw new Error(`Fehler beim Laden von Teil ${i + 1} (Status ${chunkRes.status})`);
+      const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: password,
+          action: "getChunk",
+          filename: filename,
+          partNumber: i
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || `Fehler bei Teil ${i} (Status ${res.status})`);
       }
       
-      const blob = await chunkRes.blob();
+      const blob = await res.blob();
       chunks.push(blob);
     }
 
@@ -113,12 +84,9 @@ async function startExtractionAndPlayback() {
     const tarBlob = new Blob(chunks, { type: "application/octet-stream" });
 
     statusEl.textContent = "📂 Entpacke Video aus TAR...";
-    // 3. TAR im Browser entpacken und MP4 extrahieren
     const videoBlob = await extractMp4FromTar(tarBlob);
 
     statusEl.textContent = "🎬 Bereite Player vor...";
-    
-    // 4. An den Videoplayer übergeben
     videoEl.src = URL.createObjectURL(videoBlob);
     videoEl.style.display = "block";
     videoEl.load();
