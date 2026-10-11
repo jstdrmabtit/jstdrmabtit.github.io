@@ -1,102 +1,123 @@
-<script>
-// Hilfsfunktion zum Entpacken der ersten MP4-Datei aus dem TAR-Blob
-async function extractMp4FromTar(tarBlob) {
-  const buffer = await tarBlob.arrayBuffer();
-  const view = new Uint8Array(buffer);
-  let offset = 0;
-  
-  while (offset < view.length) {
-    const header = view.subarray(offset, offset + 512);
-    if (header[0] === 0) break;
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Video Loader</title>
+</head>
+body { background: #121212; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+  <div style="background: #1e1e1e; padding: 20px; border-radius: 8px; width: 100%; max-width: 500px;">
+    <h3>🎬 Archiv laden & abspielen</h3>
     
-    let name = "";
-    for (let i = 0; i < 100; i++) {
-      if (header[i] === 0) break;
-      name += String.fromCharCode(header[i]);
-    }
+    <input type="text" id="fileNameInput" value="MelinaTheoTown_Final.tar" placeholder="Archiv-Dateiname" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px;">
     
-    let sizeStr = "";
-    for (let i = 124; i < 136; i++) {
-      if (header[i] === 0 || header[i] === 32) continue;
-      sizeStr += String.fromCharCode(header[i]);
-    }
-    const size = parseInt(sizeStr, 8);
+    <input type="password" id="workerPassword" placeholder="Admin Passwort" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px;">
     
-    offset += 512;
+    <button onclick="startExtractionAndPlayback()" style="width: 100%; padding: 10px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Abspielen</button>
     
-    if (name.toLowerCase().endsWith('.mp4') || size > 0) {
-      const fileData = view.subarray(offset, offset + size);
-      return new Blob([fileData], { type: 'video/mp4' });
-    }
-    
-    const paddedSize = Math.ceil(size / 512) * 512;
-    offset += paddedSize;
-  }
-  
-  throw new Error("Keine gültige Videodatei im TAR-Archiv gefunden!");
-}
+    <p id="statusMessage" style="margin-top: 10px; font-size: 13px; color: #ccc;"></p>
 
-async function startExtractionAndPlayback() {
-  const password = document.getElementById('workerPassword').value;
-  const filename = document.getElementById('fileNameInput').value.trim();
-  const statusEl = document.getElementById('statusMessage');
-  const videoEl = document.getElementById('videoPlayer');
-  
-  if (!password || !filename) {
-    statusEl.textContent = "❌ Bitte Passwort und Dateiname eingeben!";
-    statusEl.style.color = "#ff6b6b";
-    return;
-  }
+    <video id="videoPlayer" controls style="width: 100%; margin-top: 15px; display: none; border-radius: 6px; background: #000;"></video>
+  </div>
 
-  statusEl.textContent = "⏳ Starte Download (Teil für Teil)...";
-  statusEl.style.color = "#ccc";
-  videoEl.style.display = "none";
-
-  try {
-    const chunks = [];
-    const totalParts = 24;
-
-    // Fordert jeden Teil einzeln frisch beim Worker an (keine ablaufenden Tokens!)
-    for (let i = 1; i <= totalParts; i++) {
-      statusEl.textContent = `📥 Lade Teil ${i} von ${totalParts}...`;
+  <script>
+    async function extractMp4FromTar(tarBlob) {
+      const buffer = await tarBlob.arrayBuffer();
+      const view = new Uint8Array(buffer);
+      let offset = 0;
       
-      const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          password: password,
-          action: "getChunk",
-          filename: filename,
-          partNumber: i
-        })
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || `Fehler bei Teil ${i} (Status ${res.status})`);
+      while (offset < view.length) {
+        const header = view.subarray(offset, offset + 512);
+        if (header[0] === 0) break;
+        
+        let name = "";
+        for (let i = 0; i < 100; i++) {
+          if (header[i] === 0) break;
+          name += String.fromCharCode(header[i]);
+        }
+        
+        let sizeStr = "";
+        for (let i = 124; i < 136; i++) {
+          if (header[i] === 0 || header[i] === 32) continue;
+          sizeStr += String.fromCharCode(header[i]);
+        }
+        const size = parseInt(sizeStr, 8);
+        
+        offset += 512;
+        
+        if (name.toLowerCase().endsWith('.mp4') || size > 0) {
+          const fileData = view.subarray(offset, offset + size);
+          return new Blob([fileData], { type: 'video/mp4' });
+        }
+        
+        const paddedSize = Math.ceil(size / 512) * 512;
+        offset += paddedSize;
       }
       
-      const blob = await res.blob();
-      chunks.push(blob);
+      throw new Error("Keine gültige Videodatei im TAR-Archiv gefunden!");
     }
 
-    statusEl.textContent = "📦 Setze TAR-Archiv zusammen...";
-    const tarBlob = new Blob(chunks, { type: "application/octet-stream" });
+    async function startExtractionAndPlayback() {
+      const password = document.getElementById('workerPassword').value;
+      const filename = document.getElementById('fileNameInput').value.trim();
+      const statusEl = document.getElementById('statusMessage');
+      const videoEl = document.getElementById('videoPlayer');
+      
+      if (!password || !filename) {
+        statusEl.textContent = "❌ Bitte Passwort und Dateiname eingeben!";
+        statusEl.style.color = "#ff6b6b";
+        return;
+      }
 
-    statusEl.textContent = "📂 Entpacke Video aus TAR...";
-    const videoBlob = await extractMp4FromTar(tarBlob);
+      statusEl.textContent = "⏳ Starte Download (Teil für Teil)...";
+      statusEl.style.color = "#ccc";
+      videoEl.style.display = "none";
 
-    statusEl.textContent = "🎬 Bereite Player vor...";
-    videoEl.src = URL.createObjectURL(videoBlob);
-    videoEl.style.display = "block";
-    videoEl.load();
-    
-    statusEl.textContent = `✅ Erfolgreich entpackt & bereit! (${(videoBlob.size / (1024 * 1024)).toFixed(1)} MB)`;
-    statusEl.style.color = "#51cf66";
+      try {
+        const chunks = [];
+        const totalParts = 24;
 
-  } catch (err) {
-    statusEl.textContent = "❌ Fehler: " + err.message;
-    statusEl.style.color = "#ff6b6b";
-  }
-}
-</script>
+        for (let i = 1; i <= totalParts; i++) {
+          statusEl.textContent = `📥 Lade Teil ${i} von ${totalParts}...`;
+          
+          const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              password: password,
+              action: "getChunk",
+              filename: filename,
+              partNumber: i
+            })
+          });
+
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || `Fehler bei Teil ${i} (Status ${res.status})`);
+          }
+          
+          const blob = await res.blob();
+          chunks.push(blob);
+        }
+
+        statusEl.textContent = "📦 Setze TAR-Archiv zusammen...";
+        const tarBlob = new Blob(chunks, { type: "application/octet-stream" });
+
+        statusEl.textContent = "📂 Entpacke Video aus TAR...";
+        const videoBlob = await extractMp4FromTar(tarBlob);
+
+        statusEl.textContent = "🎬 Bereite Player vor...";
+        videoEl.src = URL.createObjectURL(videoBlob);
+        videoEl.style.display = "block";
+        videoEl.load();
+        
+        statusEl.textContent = `✅ Erfolgreich entpackt & bereit! (${(videoBlob.size / (1024 * 1024)).toFixed(1)} MB)`;
+        statusEl.style.color = "#51cf66";
+
+      } catch (err) {
+        statusEl.textContent = "❌ Fehler: " + err.message;
+        statusEl.style.color = "#ff6b6b";
+      }
+    }
+  </script>
+</body>
+</html>
