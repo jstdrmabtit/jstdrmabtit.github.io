@@ -1,255 +1,87 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Media Portal & YAML Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950">
+<!-- Download-Bereich -->
+<div style="background: #1e1e1e; color: #fff; padding: 20px; border-radius: 8px; font-family: sans-serif; max-width: 400px;">
+  <h3>Archiv herunterladen</h3>
+  <p style="font-size: 14px; color: #aaa;">Gib den Dateinamen und dein Admin-Passwort ein.</p>
+  
+  <input type="text" id="fileNameInput" value="MelinaTheoTown_Final.tar" placeholder="Dateiname (z.B. archive.tar)" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px;">
+  
+  <input type="password" id="workerPassword" placeholder="Admin Passwort" style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; background: #2d2d2d; border: 1px solid #444; color: #fff; border-radius: 4px;">
+  
+  <button onclick="startClientDownload()" style="width: 100%; padding: 10px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Download starten</button>
+  
+  <p id="statusMessage" style="margin-top: 10px; font-size: 13px; color: #ccc;"></p>
+</div>
 
-    <header class="w-full bg-slate-800/85 backdrop-blur border-b border-slate-700 p-4 sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="font-bold text-sm sm:text-base flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm14 6a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2a2 2 0 012-2h12z" clip-rule="evenodd" />
-                </svg>
-                Secure Media Portal & YAML Manager
-            </h1>
-            <div id="auth-status" class="text-xs px-3 py-1 rounded-full bg-slate-700 text-slate-300 font-medium">
-                Nicht verbunden
-            </div>
-        </div>
-    </header>
+<script>
+async function startClientDownload() {
+  const password = document.getElementById('workerPassword').value;
+  const filename = document.getElementById('fileNameInput').value.trim();
+  const statusEl = document.getElementById('statusMessage');
+  
+  if (!password || !filename) {
+    statusEl.textContent = "❌ Bitte Passwort und Dateiname eingeben!";
+    statusEl.style.color = "#ff6b6b";
+    return;
+  }
 
-    <main class="flex-grow max-w-4xl w-full mx-auto p-4 sm:p-6 flex flex-col items-center justify-center space-y-6">
+  statusEl.textContent = "⏳ Hole Download-Links vom Worker...";
+  statusEl.style.color = "#ccc";
 
-        <!-- CONFIG & FETCH VIEW -->
-        <div id="setup-card" class="w-full max-w-xl bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-xl">
-            <div class="text-center mb-6">
-                <div class="inline-flex p-3 rounded-full bg-amber-500/10 text-amber-400 mb-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                    </svg>
-                </div>
-                <h2 class="text-xl font-bold">Cloudflare Worker Anbindung</h2>
-                <p class="text-sm text-slate-400 mt-1">Worker-URL bestätigen, um YAML und Medien zu laden.</p>
-            </div>
+  try {
+    // 1. URLs vom Worker anfordern (dynamischer Dateiname)
+    const res = await fetch("https://dark-scene-3aef.dssd00598.workers.dev", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        password: password,
+        action: "getUrls",
+        filename: filename,
+        totalParts: 24
+      })
+    });
 
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Worker Endpoint URL</label>
-                    <input type="text" id="worker-url-input" value="https://dark-scene-3aef.dssd00598.workers.dev" required
-                        class="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-100 text-xs mb-3">
-                </div>
+    const data = await res.json();
+    if (!data.success) {
+      statusEl.textContent = "❌ Fehler: " + data.message;
+      statusEl.style.color = "#ff6b6b";
+      return;
+    }
 
-                <div id="error-msg" class="hidden text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-xl break-words"></div>
+    const chunks = [];
+    const total = data.urls.length;
 
-                <button onclick="initializePortal()" id="load-btn" class="w-full py-3 bg-amber-600 hover:bg-amber-500 font-semibold rounded-xl transition shadow-lg shadow-amber-600/25 text-slate-950 text-sm">
-                    Mit Worker Verbinden
-                </button>
-            </div>
-        </div>
+    // 2. Alle Teile nacheinander herunterladen
+    for (let i = 0; i < total; i++) {
+      statusEl.textContent = `📥 Lade Teil ${i + 1} von ${total}...`;
+      
+      const chunkRes = await fetch(data.urls[i]);
+      if (!chunkRes.ok) {
+        throw new Error(`Fehler beim Laden von Teil ${i + 1} (Status ${chunkRes.status})`);
+      }
+      
+      const blob = await chunkRes.blob();
+      chunks.push(blob);
+    }
 
-        <!-- DASHBOARD & EDITOR VIEW (Hidden by default) -->
-        <div id="editor-content" class="hidden w-full space-y-6">
-            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 bg-emerald-500/20 text-emerald-400 rounded-xl">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-emerald-300 text-sm">Verbunden</h3>
-                        <p class="text-xs text-slate-400">Worker aktiv & bereit</p>
-                    </div>
-                </div>
-                <button onclick="resetSetup()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs text-slate-200 transition">
-                    Worker Wechseln
-                </button>
-            </div>
+    statusEl.textContent = "📦 Setze Archiv zusammen...";
+    
+    // 3. Im Browser zusammenfügen
+    const finalBlob = new Blob(chunks, { type: "application/octet-stream" });
+    
+    // 4. Download auslösen
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(finalBlob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 
-            <!-- MEDIA CANVAS & STREAMER SECTION -->
-            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 sm:p-6 shadow-xl flex flex-col gap-4">
-                <div class="flex justify-between items-center border-b border-slate-700 pb-3">
-                    <h4 class="font-semibold text-xs uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l4 2A1 1 0 0020 14V6a1 1 0 00-1.447-.894l-4 2z" />
-                        </svg>
-                        IMAGESERVER Stream (Canvas Player)
-                    </h4>
-                    <span class="text-xs bg-slate-700 text-slate-300 px-2.5 py-1 rounded-full">Tar Chunk Merger</span>
-                </div>
+    statusEl.textContent = `✅ Erfolgreich heruntergeladen! (${(finalBlob.size / (1024 * 1024)).toFixed(1)} MB)`;
+    statusEl.style.color = "#51cf66";
 
-                <div class="space-y-3">
-                    <div class="flex gap-2">
-                        <input type="password" id="stream-password" placeholder="Admin-Passwort für Stream..." 
-                            class="flex-grow px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                        <button onclick="fetchAndStreamVideo()" id="stream-btn" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-semibold text-xs rounded-xl transition">
-                            Video Laden & Abspielen
-                        </button>
-                    </div>
-                </div>
-
-                <div class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-slate-700 flex items-center justify-center">
-                    <video id="videoPlayer" class="w-full h-full object-contain hidden" controls autoplay></video>
-                    <div id="canvas-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 p-4 text-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-amber-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p id="stream-status-text" class="text-xs text-slate-300 font-medium">Gib dein Passwort ein und klicke auf Video Laden</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- YAML EDITOR SECTION -->
-            <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-xl flex flex-col">
-                <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
-                    <h4 class="font-semibold text-xs uppercase tracking-wider text-slate-300">YAML Editor (`meinedaten.yml`)</h4>
-                    <span class="text-xs bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-full">GitHub Sync</span>
-                </div>
-                
-                <div class="p-4 bg-slate-900/50 flex flex-col gap-4">
-                    <textarea id="yaml-textarea" rows="8" class="w-full font-mono text-xs p-4 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500 leading-relaxed" placeholder="YAML wird geladen..."></textarea>
-
-                    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-700/60">
-                        <input type="password" id="yaml-password" placeholder="Passwort zum Speichern..." 
-                            class="w-full sm:w-64 px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                        <button onclick="saveYamlData()" id="save-btn" class="w-full sm:w-auto px-6 py-2.5 bg-amber-600 hover:bg-amber-500 font-semibold rounded-xl text-xs text-slate-950 transition shadow-lg">
-                            Auf GitHub Speichern
-                        </button>
-                    </div>
-                    <div id="save-status-msg" class="hidden text-xs p-3 rounded-xl"></div>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <footer class="w-full text-center py-4 text-xs text-slate-500 border-t border-slate-800">
-        Secure Cloudflare Worker & GitHub Integration
-    </footer>
-
-    <script>
-        async function initializePortal() {
-            const workerUrl = document.getElementById("worker-url-input").value.trim();
-            const loadBtn = document.getElementById("load-btn");
-            const errorMsg = document.getElementById("error-msg");
-
-            loadBtn.textContent = "Verbinde...";
-            errorMsg.classList.add("hidden");
-
-            try {
-                // GET request for YAML data
-                const response = await fetch(workerUrl, { method: "GET" });
-                if (!response.ok) throw new Error(`Worker Status ${response.status}`);
-
-                const yamlText = await response.text();
-                document.getElementById("yaml-textarea").value = yamlText;
-
-                document.getElementById("setup-card").classList.add("hidden");
-                document.getElementById("editor-content").classList.remove("hidden");
-                document.getElementById("auth-status").textContent = "Verbunden";
-                document.getElementById("auth-status").className = "text-xs px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium";
-            } catch (err) {
-                errorMsg.textContent = "Fehler: " + err.message + ". Bitte Worker URL prüfen.";
-                errorMsg.classList.remove("hidden");
-            } finally {
-                loadBtn.textContent = "Mit Worker Verbinden";
-            }
-        }
-
-        async function fetchAndStreamVideo() {
-            const workerUrl = document.getElementById("worker-url-input").value.trim();
-            const password = document.getElementById("stream-password").value;
-            const streamBtn = document.getElementById("stream-btn");
-            const statusText = document.getElementById("stream-status-text");
-            const overlay = document.getElementById("canvas-overlay");
-            const videoPlayer = document.getElementById("videoPlayer");
-
-            if (!password) {
-                alert("Bitte Admin-Passwort eingeben!");
-                return;
-            }
-
-            streamBtn.textContent = "Lade Chunks...";
-            statusText.textContent = "Lade 8 Chunks aus IMAGESERVER und füge sie zusammen...";
-
-            try {
-                const response = await fetch(workerUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        password: password,
-                        action: "getVideo",
-                        filename: "outputs.tar",
-                        totalParts: 8
-                    })
-                });
-
-                if (!response.ok) {
-                    const errJson = await response.json();
-                    throw new Error(errJson.message || "Stream-Fehler");
-                }
-
-                const blob = await response.blob();
-                const videoUrl = URL.createObjectURL(blob);
-
-                videoPlayer.src = videoUrl;
-                videoPlayer.classList.remove("hidden");
-                overlay.style.display = "none";
-                videoPlayer.play();
-
-            } catch (err) {
-                statusText.textContent = "Fehler: " + err.message;
-                alert("Fehler beim Laden des Videos: " + err.message);
-            } finally {
-                streamBtn.textContent = "Video Laden & Abspielen";
-            }
-        }
-
-        async function saveYamlData() {
-            const workerUrl = document.getElementById("worker-url-input").value.trim();
-            const password = document.getElementById("yaml-password").value;
-            const content = document.getElementById("yaml-textarea").value;
-            const statusMsg = document.getElementById("save-status-msg");
-
-            if (!password) {
-                statusMsg.textContent = "Bitte Passwort eingeben!";
-                statusMsg.className = "text-xs p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 block";
-                return;
-            }
-
-            try {
-                const response = await fetch(workerUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ password, content })
-                });
-
-                const result = await response.json();
-                if (!response.ok || !result.success) throw new Error(result.message);
-
-                statusMsg.textContent = "Erfolgreich auf GitHub gespeichert!";
-                statusMsg.className = "text-xs p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 block";
-            } catch (err) {
-                statusMsg.textContent = "Fehler: " + err.message;
-                statusMsg.className = "text-xs p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 block";
-            }
-        }
-
-        function resetSetup() {
-            document.getElementById("editor-content").classList.add("hidden");
-            document.getElementById("setup-card").classList.remove("hidden");
-            document.getElementById("auth-status").textContent = "Nicht verbunden";
-            document.getElementById("auth-status").className = "text-xs px-3 py-1 rounded-full bg-slate-700 text-slate-300 font-medium";
-        }
-    </script>
-</body>
-</html>
+  } catch (err) {
+    statusEl.textContent = "❌ Fehler: " + err.message;
+    statusEl.style.color = "#ff6b6b";
+  }
+}
+</script>
