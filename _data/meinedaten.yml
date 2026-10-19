@@ -1,1 +1,18 @@
-# Login check
+legende:
+  - farbe: "#238636"
+    label: "Frei"
+    status: "frei"
+  - farbe: "#da3633"
+    label: "Belegt"
+    status: "belegt"
+  - farbe: "#d29922"
+    label: "Vorgemerkt"
+    status: "vorgemerkt"
+
+termine:
+  - sw: "?"
+    kw: "46"
+    von: "09.11.2026"
+    bis: "13.11.2026"
+    betrieb: "Strama-MPS"
+    status: "belegt"
